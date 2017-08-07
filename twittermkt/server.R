@@ -1984,16 +1984,17 @@ observe({
     # }
     
     content <- as.character(tagList(
-      tags$a(href=trends$url[1],trends$name[1]), tags$br(),
-      tags$a(href=trends$url[2],trends$name[2]), tags$br(),
-      tags$a(href=trends$url[3],trends$name[3]), tags$br(),
-      tags$a(href=trends$url[4],trends$name[4]), tags$br(),
-      tags$a(href=trends$url[5],trends$name[5]), tags$br(),
-      tags$a(href=trends$url[6],trends$name[6]), tags$br(),
-      tags$a(href=trends$url[7],trends$name[7]), tags$br(),
-      tags$a(href=trends$url[8],trends$name[8]), tags$br(),
-      tags$a(href=trends$url[9],trends$name[9]), tags$br(),
-      tags$a(href=trends$url[10],trends$name[10]), tags$br()
+      tags$b("Top 10 trends right now"), tags$br(), tags$br(),
+      tags$a(href=trends$url[1],trends$name[1], target="_blank"), tags$br(),
+      tags$a(href=trends$url[2],trends$name[2], target="_blank"), tags$br(),
+      tags$a(href=trends$url[3],trends$name[3], target="_blank"), tags$br(),
+      tags$a(href=trends$url[4],trends$name[4], target="_blank"), tags$br(),
+      tags$a(href=trends$url[5],trends$name[5], target="_blank"), tags$br(),
+      tags$a(href=trends$url[6],trends$name[6], target="_blank"), tags$br(),
+      tags$a(href=trends$url[7],trends$name[7], target="_blank"), tags$br(),
+      tags$a(href=trends$url[8],trends$name[8], target="_blank"), tags$br(),
+      tags$a(href=trends$url[9],trends$name[9], target="_blank"), tags$br(),
+      tags$a(href=trends$url[10],trends$name[10], target="_blank"), tags$br()
     ))
     
     leafletProxy("trendsMap") %>% addPopups(lng, lat,content)
