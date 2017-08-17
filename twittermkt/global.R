@@ -59,7 +59,7 @@ if (!require("httr")) install.packages("httr") ; require("httr")
 if (!require("twitteR")) install.packages("twitteR") ; require("twitteR")
 
 #' Flag to enable / disable Twitter fetch and web scrapping using Selenium. FALSE is disabled
-flag <- FALSE
+flag <- TRUE
 
 #' Flag to invalidate LDA topic reactive element. TRUE mean it will invalidate after every X seconds
 #' and reevaluate the expression
@@ -73,6 +73,7 @@ source("lib/topicModeling.R")
 source("lib/asyncProcessor.R")
 source("lib/wordSuggestions.R")
 source("lib/taxonomyMatrix.R")
+source("lib/customUIComponents.R")
 # Setup Twitter authorization
 
 if(TRUE) {
@@ -161,4 +162,3 @@ sent_df_global <- NULL
 
 ############## - Global wide df - ##################################################################
 doc.tax.wide.df <- NULL
-

@@ -9,22 +9,22 @@ library(V8)
 
 dashboardPage(
   dashboardHeader(
-                  title = span(tagList(icon("wpexplorer"), "tweelescope")), 
-                  dropdownMenuOutput("notificationMenu")
-                  ),
+    title = span(tagList(icon("wpexplorer"), "Tweelescope")), 
+    dropdownMenuOutput("notificationMenu")
+  ),
   
   
   dashboardSidebar(
     
     sidebarMenu(id = "tabsmenu",
-                menuItem("Twitter Trends", tabName = "twitterTrends"),
+                menuItem("Twitter Trends", icon = icon("bolt"), tabName = "twitterTrends"),
                 menuItem("Load Data", icon = icon("comments-o"), tabName = "loadData"),
                 menuItem("Annotate", icon = icon("bookmark"), tabName = "annotatetab"),
                 menuItem("Twitter Analysis", icon = icon("twitter"),
                          menuItem("Tweets Series", tabName = "tweetsBubbleChart"),
                          menuItem("Tweets Analysis", tabName = "tweetsAnalysis"),
                          menuItem("User Analysis", tabName = "userAnalysis")
-                         ),
+                ),
                 # menuItem("User Analysis", tabName = "useranalysis"),
                 menuItem("Taxonomy Analysis", icon = icon("area-chart"),
                          menuItem("Dashboard", icon = icon("pie-chart"), tabName = "taxonomyDashboard"),
@@ -35,22 +35,22 @@ dashboardPage(
                 ),
                 # menuItem("Trends", tabName = "exploreTrends"),
                 menuItem("Taxonomy Management", icon = icon("list-ul"),
-                   menuItem("Load Taxonomy",
-                            selectInput("loadTaxonomy", label = NULL, 
-                                        choices = c("--Select--",list.files("./taxonomies", pattern = ".RDS"))),
-                            menuItem("Load from CSV", tabName = "loadTaxonomyFile")
-                   ),
-                   menuItem("Save Taxonomy",
-                            textInput("taxonomyName", label = ""),
-                            actionButton("saveTaxonomy", "Save")
-                   )
+                         menuItem("Load Taxonomy",
+                                  selectInput("loadTaxonomy", label = NULL, 
+                                              choices = c("--Select--",list.files("./taxonomies", pattern = ".RDS"))),
+                                  menuItem("Load from CSV", tabName = "loadTaxonomyFile")
+                         ),
+                         menuItem("Save Taxonomy",
+                                  textInput("taxonomyName", label = ""),
+                                  actionButton("saveTaxonomy", "Save")
+                         )
                          
                 ),
                 menuItem("A.I. Analysis", icon = icon("android"),
                          menuSubItem("Sentiment Analysis", icon = icon("smile-o"), tabName = "sentimentAnalysis"),
                          menuSubItem("View Learned Topics", icon = icon("book"), tabName = "lda"),
-#                        menuItem("Word Suggestions",
-#                                      shiny::shinyUI("wordSuggestions")),
+                         #                        menuItem("Word Suggestions",
+                         #                                      shiny::shinyUI("wordSuggestions")),
                          menuItem("Extract Entities", icon = icon("user-circle"), tabName = "extractedEntities")
                 ),
                 menuItem("Twitter Mines", icon = icon("hashtag"),
@@ -66,13 +66,14 @@ dashboardPage(
   ),
   dashboardBody(
     tags$head(tags$script(src = "./www/sequences.js"),
+              tags$script(src = "customComponentJS.js"),
               tags$script(src = "http://d3js.org/d3.v3.min.js"),
               tags$script(src = "https://code.highcharts.com/highcharts.js"),
               tags$script(src = "https://code.highcharts.com/highcharts-more.js"),
               tags$script(src = "https://code.highcharts.com/modules/exporting.js"),
               tags$script(src = "https://code.highcharts.com/modules/heatmap.js"),
               tags$link(rel = "stylesheet", type="text/css", href="https://fonts.googleapis.com/css?family=Open+Sans:400,600")),
-              #tags$link(rel = "stylesheet", type="text/css", href="./www/sequences.css")),
+    #tags$link(rel = "stylesheet", type="text/css", href="./www/sequences.css")),
     tabItems(
       
       tabItem("loadData",
@@ -162,18 +163,18 @@ dashboardPage(
                                 )
                               )
                      )
-#                      ,
-#                      tabPanel("from Facebook", 
-#                               fluidRow(
-#                                 column(4,
-#                                        textInput("searchfb", "SEARCH #")
-#                                        
-#                                 ),
-#                                 column(2,
-#                                        actionButton("gofb", "GO")
-#                                 )
-#                               )
-#                      )
+                     #                      ,
+                     #                      tabPanel("from Facebook", 
+                     #                               fluidRow(
+                     #                                 column(4,
+                     #                                        textInput("searchfb", "SEARCH #")
+                     #                                        
+                     #                                 ),
+                     #                                 column(2,
+                     #                                        actionButton("gofb", "GO")
+                     #                                 )
+                     #                               )
+                     #                      )
                      
               ),
               tableOutput("contents")
@@ -241,14 +242,14 @@ dashboardPage(
                 
               )
       ),
-
+      
       #' Twitter Bubble Chart
       tabItem("tweetsBubbleChart",
               #rCharts::showOutput("tweetsBubble", lib = "highcharts")
               plotly::plotlyOutput("tweetsBubble"),
               tableOutput("tweetsBubbleTable")
       ),
-
+      
       # Twitter Tweets Analysis
       tabItem("tweetsAnalysis",
               
@@ -273,18 +274,18 @@ dashboardPage(
                               fluidRow(
                                 column(width = 8, offset = 0,
                                        tabBox(width = 12,
-                                         tabPanel(title = "Word Cloud",
-                                                  plotOutput("tweets_word_cloud", height = 300)
-                                         ),
-                                         tabPanel(title = "HashTag Cloud",
-                                                  plotOutput("tweets_tag_cloud", height = 300)
-                                         ),
-                                         tabPanel(title = "Users Cloud",
-                                                  plotOutput("user_handle_cloud", height = 300)
-                                         ),
-                                         tabPanel(title = "Users in tweets Cloud",
-                                                  plotOutput("user_handle_in_tweets_cloud", height = 300)
-                                         )
+                                              tabPanel(title = "Word Cloud",
+                                                       plotOutput("tweets_word_cloud", height = 300)
+                                              ),
+                                              tabPanel(title = "HashTag Cloud",
+                                                       plotOutput("tweets_tag_cloud", height = 300)
+                                              ),
+                                              tabPanel(title = "Users Cloud",
+                                                       plotOutput("user_handle_cloud", height = 300)
+                                              ),
+                                              tabPanel(title = "Users in tweets Cloud",
+                                                       plotOutput("user_handle_in_tweets_cloud", height = 300)
+                                              )
                                        )
                                 ),
                                 column(width = 4, offset = 0,
@@ -292,11 +293,6 @@ dashboardPage(
                                 ) # end column
                               ) # end fluidrow
                      ), # end tabPanel
-                     
-                     tabPanel("Tagcloud",
-                              HTML("plasdasd")
-                              #plotOutput("tweets_tag_cloud")
-                     ),
                      
                      tabPanel("tweets map",
                               
@@ -341,9 +337,9 @@ dashboardPage(
                      
               ) # end tabbox
       ),
-
+      
       # Twitter User analysis
-
+      
       tabItem("userAnalysis",
               
               tabBox(width = 12, height = "900px",
@@ -399,13 +395,13 @@ dashboardPage(
                                 column(width = 8, offset = 0, style='padding:0px;',
                                        htmlOutput("userSummary2"),
                                        tabBox(width = 12,
-                                         tabPanel("Wordcloud", 
-                                                  actionButton("generatewc","word", icon = icon("cloud")),
-                                                  plotOutput("word_cloud")
-                                         ),
-                                         tabPanel("Tagcloud"
-                                                  
-                                         )
+                                              tabPanel("Wordcloud", 
+                                                       actionButton("generatewc","word", icon = icon("cloud")),
+                                                       plotOutput("word_cloud")
+                                              ),
+                                              tabPanel("Tagcloud"
+                                                       
+                                              )
                                        )
                                        
                                        #tableOutput("click_info")
@@ -421,36 +417,36 @@ dashboardPage(
                      
               )
       ),
-
-
+      
+      
       # Sentiment Analysis
       tabItem("sentimentAnalysis",
               
               tabBox(width = 12,
                      tabPanel("Sentiment over time",
-                        fluidRow(
-                          selectInput("chrono",label = "Analysis By", selected = "month",
-                                      choices = c("year","month","week","day","hour")),
-                          dygraphOutput("sentimentplot")
-                        )
+                              fluidRow(
+                                selectInput("chrono",label = "Analysis By", selected = "month",
+                                            choices = c("year","month","week","day","hour")),
+                                dygraphOutput("sentimentplot")
+                              )
                      ),
                      tabPanel("Sentiment Cloud", 
-                        plotOutput("sentiment_cloud")
+                              plotOutput("sentiment_cloud")
                      ),
                      tabPanel("Emotion Analysis", 
-                        tableOutput("sent_df")      
+                              tableOutput("sent_df")      
                      ),
                      tabPanel("Sentiment Analysis", 
                               plotOutput("sentimentScatterPlot", height = 500,
-                                          brush = brushOpts(
-                                            id = "sentimentPlot_brush"
-                                          )
+                                         brush = brushOpts(
+                                           id = "sentimentPlot_brush"
+                                         )
                               ),
                               tableOutput("brushed_points")
                      )
               )
       ),
-
+      
       tabItem("matrixAnalysis",
               fluidRow(
                 column(width = 4,
@@ -464,7 +460,7 @@ dashboardPage(
                 DT::dataTableOutput("taxonomyMatrix")
               )
       ),
-
+      
       tabItem("pivotAnalysis",
               fluidRow(
                 column(width = 4,
@@ -481,7 +477,7 @@ dashboardPage(
                 pivottabler::pivottablerOutput("taxPivot")
               )
       ),
-
+      
       #' Heatmap plot  
       tabItem("heatmapAnalysis",
               fluidRow(
@@ -502,8 +498,8 @@ dashboardPage(
                 rCharts::showOutput("taxonomyHeatmap","highcharts")
               )
       ),
-
-
+      
+      
       tabItem("taxonomyAnalysis",
               
               tabBox(width = 12,
@@ -529,11 +525,11 @@ dashboardPage(
       ),
       
       tabItem("taxonomyDashboard",
-          rCharts::showOutput("taxPie", lib = "nvd3")
-          #htmlOutput("taxPie")
+              rCharts::showOutput("taxPie", lib = "nvd3")
+              #htmlOutput("taxPie")
       ),
-
-
+      
+      
       tabItem("loadTaxonomyFile",
               
               tabPanel("Load Taxonomy from CSV File",
@@ -569,17 +565,17 @@ dashboardPage(
                        fluidRow(
                          column(6,
                                 tableOutput("taxonomyTable")
-                                ),
+                         ),
                          column(6,
                                 verbatimTextOutput("taxonomyView"),
                                 actionButton("applyTaxonomy","Apply Taxonomy")
-                                )
+                         )
                        )
                        
               )
               
       ),
-
+      
       tabItem("lda",
               
               tabPanel(title = "Learned Topics", 
@@ -599,62 +595,62 @@ dashboardPage(
               )
               
       ),
-
+      
       #' Entity Extraction 
       tabItem("extractedEntities",
-        fluidRow(
-          valueBoxOutput("personsValueBox"),
-          valueBoxOutput("placesValueBox"),
-          valueBoxOutput("organizationsValueBox")
-        ),
-        fluidRow(
-          column(width = 4,
-                 plotly::plotlyOutput("peopleDonut"),
-                 DT::dataTableOutput("peopleExtracted")
-          ),
-          column(width = 4,
-                 plotly::plotlyOutput("placesDonut"),
-                 DT::dataTableOutput("placesExtracted")
-          ),
-          column(width = 4,
-                 plotly::plotlyOutput("orgsDonut"),
-                 DT::dataTableOutput("organizationsExtracted")
-          )
-          
-          
-          # tabBox(width = 12,
-          #        tabPanel("People",
-          #           DT::dataTableOutput("peopleExtracted")
-          #        ),
-          #        tabPanel("Places", 
-          #           DT::dataTableOutput("placesExtracted")
-          #        ),
-          #        tabPanel("Organizations",
-          #           DT::dataTableOutput("organizationsExtracted")
-          #        )
-          # )
-        )
-        
+              fluidRow(
+                valueBoxOutput("personsValueBox"),
+                valueBoxOutput("placesValueBox"),
+                valueBoxOutput("organizationsValueBox")
+              ),
+              fluidRow(
+                column(width = 4,
+                       plotly::plotlyOutput("peopleDonut"),
+                       DT::dataTableOutput("peopleExtracted")
+                ),
+                column(width = 4,
+                       plotly::plotlyOutput("placesDonut"),
+                       DT::dataTableOutput("placesExtracted")
+                ),
+                column(width = 4,
+                       plotly::plotlyOutput("orgsDonut"),
+                       DT::dataTableOutput("organizationsExtracted")
+                )
+                
+                
+                # tabBox(width = 12,
+                #        tabPanel("People",
+                #           DT::dataTableOutput("peopleExtracted")
+                #        ),
+                #        tabPanel("Places", 
+                #           DT::dataTableOutput("placesExtracted")
+                #        ),
+                #        tabPanel("Organizations",
+                #           DT::dataTableOutput("organizationsExtracted")
+                #        )
+                # )
+              )
+              
       ),
       
-
+      
       tabItem("influencerMine",
               
-        plotly::plotlyOutput("userDonut")
+              plotly::plotlyOutput("userDonut")
               
       ),
-
+      
       tabItem("tagsMine",
               
-        plotly::plotlyOutput("hashtagDonut")
+              plotly::plotlyOutput("hashtagDonut")
               
       ),
-
+      
       tabItem("word_suggestions_page",
               shiny::uiOutput("similarWordSuggestions")
       ),
-
-
+      
+      
       tabItem("rawdata",
               
               tabPanel("Data explorer",
@@ -663,16 +659,29 @@ dashboardPage(
               )
               
       ),
-    
+      
       tabItem("twitterTrends",
-          leafletOutput("trendsMap", height = 630),
-          absolutePanel(id = "twitterTrendPanel", class = "panel panel-default", fixed = TRUE,
-                        draggable = TRUE, top = 150, right = 50, left = "auto", bottom = "auto", 
-                        width = 200, height = "auto", style = "opacity: 0.40",
-                        htmlOutput("inc")
-          )
+              leafletOutput("trendsMap", height = 600),
+              absolutePanel(id = "twitterTrendPanel", class = "panel panel-default", fixed = TRUE,
+                            draggable = TRUE, top = 150, right = 50, left = "auto", bottom = "auto", 
+                            width = 100, height = "auto", style = "opacity: 0.70",
+                            uiOutput("selectedTrendsPanel")
+                            
+              ),
+              absolutePanel(id = "quickViewTrendPanel", class = "panel panel-default", fixed = TRUE,
+                            draggable = TRUE, top = 60, right = "auto", left = 50, bottom = "auto", 
+                            width = 500, height = 600, style = "opacity: 0.70; visibility: hidden;",
+                            htmlOutput("trendTimeline"),
+                            HTML('<input type="hidden" id="hiddenTrendURL" value=""')
+                            
+              )
+              # ,
+              # box(width = 12,
+              #   htmlOutput("trendTimeline")
+              # )
+              
       )
-
+      
       
     )
   )

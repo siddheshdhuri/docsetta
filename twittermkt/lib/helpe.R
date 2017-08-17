@@ -76,7 +76,7 @@ getWordLemmaTable <- function(questionId, answer_vector, num.misspell.suggests){
   
   words <- stringr::str_split(answers,'[^[:alpha:]]')[[1]]
   #words <- stringr::str_split(answers,'[[:space:]]|[\\.;:\\"\\(\\)/')[[1]]
-
+  
   words <- unique(words)
   
   words <- words[nchar(words) > 3]
@@ -137,9 +137,9 @@ xlsx.setHeaderStyle <- function(wb){
   sheets <- getSheets(wb)
   
   TITLE_STYLE <- CellStyle(wb)+ 
-                        Fill(backgroundColor="gray", foregroundColor="gray",
-                        pattern="SOLID_FOREGROUND") +
-                        Font(wb,  heightInPoints=10, color="white", isBold=TRUE)
+    Fill(backgroundColor="gray", foregroundColor="gray",
+         pattern="SOLID_FOREGROUND") +
+    Font(wb,  heightInPoints=10, color="white", isBold=TRUE)
   
   for(each.sheet in sheets){
     rows <- getRows(each.sheet, rowIndex=1)
@@ -238,7 +238,7 @@ getTaxonomySuggestion <- function(model){
 
 
 getSuggestionsFromTopicModel <- function(questionId, answers){
-    
+  
   model <- getTopicModel(answers)
   
   tax.suggestion <- getTaxonomySuggestion(model)
@@ -284,9 +284,9 @@ getTermMatrix <- memoise(function(textvector) {
 # custom wordcloud function to avoid NAMESPACE conflicts
 #
 getWordCloud <- function (words, freq, scale = c(4, 0.5), min.freq = 3, max.words = Inf, 
-          random.order = TRUE, random.color = FALSE, rot.per = 0.1, 
-          colors = "black", ordered.colors = FALSE, use.r.layout = FALSE, 
-          fixed.asp = TRUE, ...) 
+                          random.order = TRUE, random.color = FALSE, rot.per = 0.1, 
+                          colors = "black", ordered.colors = FALSE, use.r.layout = FALSE, 
+                          fixed.asp = TRUE, ...) 
 {
   if (!fixed.asp && rot.per > 0) 
     stop("Variable aspect ratio not supported for rotated words. Set rot.per=0.")
@@ -400,7 +400,7 @@ getWordCloud <- function (words, freq, scale = c(4, 0.5), min.freq = 3, max.word
           cc <- colors[sample(1:nc, 1)]
         }
         graphics::text(x1, y1, words[i], cex = size[i], offset = 0, 
-             srt = rotWord * 90, col = cc, ...)
+                       srt = rotWord * 90, col = cc, ...)
         boxes[[length(boxes) + 1]] <- c(x1 - 0.5 * wid, 
                                         y1 - 0.5 * ht, wid, ht)
         isOverlaped <- FALSE
@@ -461,26 +461,6 @@ extractEntities <- function(doc, kind) {
     s[a[a$type == "entity"]]
   }
 }
-
-
-
-#################################################
-# dynamic button that is used for Topic models page
-# dynamic numner of topics are generated and this buttons 
-# is used for adding selected topics and words to taxonomy
-
-addToTax <- function(inputId, value = "Button") {
-  tagList(
-    singleton(tags$head(tags$script(src = "script.js"))),
-    tags$button(id = inputId,
-                class = "increment btn btn-default",
-                type = "button",
-                as.character(value))
-  )
-}
-
-
-
 
 
 
