@@ -2042,47 +2042,47 @@ shinyServer(function(input, output, session) {
         ),
         tags$tr(
           tags$td(tags$a(trends$name[2], style="cursor: pointer;",
-                         onclick= paste0("trendQuickView('",trends$url[1],"');"))),
+                         onclick= paste0("trendQuickView('",trends$url[2],"');"))),
           tags$td(addTrendForSearch(trends$name[2]))
         ),
         tags$tr(
           tags$td(tags$a(trends$name[3], style="cursor: pointer;",
-                         onclick= paste0("trendQuickView('",trends$url[1],"');"))),
+                         onclick= paste0("trendQuickView('",trends$url[3],"');"))),
           tags$td(addTrendForSearch(trends$name[3]))
         ),
         tags$tr(
           tags$td(tags$a(trends$name[4], style="cursor: pointer;",
-                         onclick= paste0("trendQuickView('",trends$url[1],"');"))),
+                         onclick= paste0("trendQuickView('",trends$url[4],"');"))),
           tags$td(addTrendForSearch(trends$name[4]))
         ),
         tags$tr(
           tags$td(tags$a(trends$name[5], style="cursor: pointer;",
-                         onclick= paste0("trendQuickView('",trends$url[1],"');"))),
+                         onclick= paste0("trendQuickView('",trends$url[5],"');"))),
           tags$td(addTrendForSearch(trends$name[5]))
         ),
         tags$tr(
           tags$td(tags$a(trends$name[6], style="cursor: pointer;",
-                         onclick= paste0("trendQuickView('",trends$url[1],"');"))),
+                         onclick= paste0("trendQuickView('",trends$url[6],"');"))),
           tags$td(addTrendForSearch(trends$name[6]))
         ),
         tags$tr(
           tags$td(tags$a(trends$name[7], style="cursor: pointer;",
-                         onclick= paste0("trendQuickView('",trends$url[1],"');"))),
+                         onclick= paste0("trendQuickView('",trends$url[7],"');"))),
           tags$td(addTrendForSearch(trends$name[7]))
         ),
         tags$tr(
           tags$td(tags$a(trends$name[8], style="cursor: pointer;",
-                         onclick= paste0("trendQuickView('",trends$url[1],"');"))),
+                         onclick= paste0("trendQuickView('",trends$url[8],"');"))),
           tags$td(addTrendForSearch(trends$name[8]))
         ),
         tags$tr(
           tags$td(tags$a(trends$name[9], style="cursor: pointer;",
-                         onclick= paste0("trendQuickView('",trends$url[1],"');"))),
+                         onclick= paste0("trendQuickView('",trends$url[9],"');"))),
           tags$td(addTrendForSearch(trends$name[9]))
         ),
         tags$tr(
           tags$td(tags$a(trends$name[10], style="cursor: pointer;",
-                         onclick= paste0("trendQuickView('",trends$url[1],"');"))),
+                         onclick= paste0("trendQuickView('",trends$url[10],"');"))),
           tags$td(addTrendForSearch(trends$name[10]))
         )
       )
