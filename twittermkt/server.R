@@ -123,7 +123,7 @@ shinyServer(function(input, output, session) {
     
     search.term <- input$search
     search.term <- gsub("[,;\\.]","|", search.term)
-    no.of.tweets <- 100
+    no.of.tweets <- 600
     if(flag){
       
       #Get the tweets
@@ -149,10 +149,10 @@ shinyServer(function(input, output, session) {
         twitterEx:::getTweetsDataFrame(tweets)
         
       })
-      
-      tweetlat = NA
-      tweetlon = NA
-      
+      print(nrow(tweets.df))
+      tweets.df$lon = NULL
+      tweets.df$lat = NULL
+      start_time <- Sys.time()
       ######## - start code for Fork async process -###########
       doFork(
         refreshRateSeconds = 10,
@@ -173,9 +173,9 @@ shinyServer(function(input, output, session) {
           #
           result = tryCatch({
             
-            gc <- twitterEx::getUserLocation(tweets.df$user)
-            
-            list(tweetlat=as.numeric(gc$lat),tweetlon=as.numeric(gc$lon))
+            userdf <- twitterEx::getUserLocation(tweets.df$user)
+            return(userdf)
+            #list(tweetlat=as.numeric(gc$lat),tweetlon=as.numeric(gc$lon))
             
           }, error = function(e) {
             print(e)
@@ -192,10 +192,11 @@ shinyServer(function(input, output, session) {
         },
         onFeedback = function( result ){
           print("Feedback Received")
+          print(Sys.time() - start_time)
           #
-          # This function will handle the results (result$data)
-          reactive.values$tweets.df$lat <- result$data$tweetlat
-          reactive.values$tweets.df$lon <- result$data$tweetlon
+          df <- merge(reactive.values$tweets.df, result$data, by="user", all.x=TRUE)
+          
+          reactive.values$tweets.df <- df
           
         })
       
@@ -204,8 +205,8 @@ shinyServer(function(input, output, session) {
       #' Add the searched term as a column
       tweets.df$search_term <- search.term
       #' save search as RDS
-      filename = paste0(paste0("data/discussions/",search.term,"_"),gsub(":","",format(Sys.time(),"%d%b%Y_%X")),".RDS")
-      saveRDS(tweets.df, filename)
+      # filename = paste0(paste0("data/discussions/",search.term,"_"),gsub(":","",format(Sys.time(),"%d%b%Y_%X")),".RDS")
+      # saveRDS(tweets.df, filename)
       
       # tweets.df <- twitterEx:::getTweetsDataFrame(tweets)
       
@@ -2036,8 +2037,11 @@ shinyServer(function(input, output, session) {
       tags$table(
         tags$tr(
           tags$td(tags$a(trends$name[1], style="cursor: pointer;",
-                         onclick= paste0("trendQuickView('",trends$url[1],"');"))),
-          tags$td(addTrendForSearch(trends$name[1]))
+                         onclick= paste0("trendQuickView('",trends$url[1],"');"))
+          ),
+          tags$td(addTrendForSearch(trends$name[1]), title = "Get Tweets")
+          # tags$td(tags$a(href=trends$url[1], target="_blank", style="padding-left: 10px;",
+          #                tags$i(class="fa fa-twitter")))
           #tags$td(trendQuickView(trends$url[1]))
         ),
         tags$tr(
@@ -2101,7 +2105,7 @@ shinyServer(function(input, output, session) {
       if(length(items) > 0) {
         return(list(
           checkboxGroupInput(inputId="selectedTrends", label = "", choices = items, selected = items),
-          actionButton("searchTrendsOnTwitter", label="", icon = icon("search"))
+          actionButton("searchTrendsOnTwitter", label="Get Tweets", icon = icon("twitter"))
         ))
       }else {
         return(NULL)
@@ -2116,18 +2120,44 @@ shinyServer(function(input, output, session) {
   #' View Trend timeline on twitter
   output$trendTimeline <- renderUI({
     
-    library(xml2)
-    
     url <- input$hiddenTrendURL
     
     if(is.null(url)) return(NULL)
     
-    html_object = read_html(url)
-    write_xml(html_object, file="www/temp.html")
+    html_obj <- RCurl::getURL(url, .opts=curlOptions(followlocation = TRUE))
+    html_obj <- gsub(pattern = "<div id=\"doc\".+<div class=\"stream\">", replacement = "", html_obj)
+    write(html_obj, "www/trendQuickView.html")
     
-    HTML(paste0('<i class="fa fa-plus-circle" id="close-trend-view" 
-                onclick="closeTrendView()" style="cursor: pointer; text-align: right; color: red;"></i>
-                <iframe id="trend-quick-view" src="temp.html" width="100%" height="600"></iframe>'))
+    # html_object = read_html(url)
+    # write_xml(html_object, file="www/temp.html")
+    
+    HTML(paste0('<table width="100%" border=0><tr><td style="background: #55B0F0; color: white; padding: 5px;">
+                <h4>Trend Quick View</h4></td>
+                <td style="padding-left: 50px;"><a href="',url,'" target="_blank">click here to view in twitter
+                <i class="fa fa-twitter" style="padding: 10px;"></i></a>
+                </td>
+                <td><i class="fa fa-window-close" id="close-trend-view"
+                onclick="closeTrendView()" style="cursor: pointer; color: red;"></i>
+                </td></tr></table>
+                <iframe id="trend-quick-view" src="trendQuickView.html" width="100%" height="600" style="align: right;"></iframe>'))
+    
+  })
+  
+  
+  
+  #' Observe Event when user clicks button to search for selected trends on twitter
+  #'
+  observeEvent(input$searchTrendsOnTwitter, {
+    
+    checkedTrends <- input$selectedTrends
+    
+    print(checkedTrends)
+    
+    updateCheckboxGroupInput(session, inputId="selectedTrends", label = "", choices = NULL, selected = NULL)
+    
+    updateTabItems(session, inputId =  "tabsmenu", selected = "loadData")
+    
+    updateTextInput(session, inputId = "search", label = "SEARCH #", value = checkedTrends)
     
   })
   

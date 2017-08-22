@@ -46,6 +46,7 @@ library(purrrlyr)
 library(rCharts)
 library(rjson)
 library(plotly)
+library(RCurl)
 
 rm(list=ls())
 
