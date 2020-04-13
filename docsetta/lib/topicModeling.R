@@ -118,7 +118,7 @@ getTopicModelandViz <- function(comments){
   
   
   # MCMC and model tuning parameters:
-  K <- 10 # number of topics to generate
+  K <- 5 # number of topics to generate
   G <- 10000 # number of iterations to compute (more = better quality and more time)
   alpha <- 0.02
   eta <- 0.02

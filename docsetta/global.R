@@ -1,4 +1,4 @@
-
+library(data.tree)
 library(shiny)
 library(shinydashboard)
 library(stringi)
@@ -7,7 +7,7 @@ library(inputAnnotate)
 library(dygraphs)
 library(xts)
 library(DT)
-library(data.tree)
+
 library(TaxonomyTree)
 library(networkD3)
 library(jobqueue)
@@ -50,6 +50,7 @@ library(rCharts)
 library(rjson)
 library(plotly)
 library(RCurl)
+library(tidytext)
 
 rm(list=ls())
 
@@ -57,10 +58,6 @@ options(encoding = 'utf-8')
 #######################################################################################
 ###################################1. Extract Twitter messages#########################
 #######################################################################################
-
-# Install and load packages to retrieve network data from Twitter
-if (!require("httr")) install.packages("httr") ; require("httr")
-if (!require("twitteR")) install.packages("twitteR") ; require("twitteR")
 
 #' Flag to enable / disable Twitter fetch and web scrapping using Selenium. FALSE is disabled
 flag <- TRUE
@@ -81,14 +78,6 @@ source("lib/customUIComponents.R")
 source("lib/LatentSemanticAnalysis.R")
 # Setup Twitter authorization
 
-if(TRUE) {
-  setup_twitter_oauth(consumer_key='1b8sIKPv3yYjXteh8UW4BCYaZ',
-                      consumer_secret='dUTMMhAoMDAsjABDq0NoUQasFeAkFZ1Q7RPJqfzligZw8bMrIF',
-                      access_token='3091224267-svuyKLlhEFuwE8eOTkcpZqyKUuFz24aayr6wIa0',
-                      access_secret='YvHamKBCkkN5FAPiNkFkQNe04jkYF0q60tR66rHmhafXj')
-}
-
-
 #' GLOBAL Full comments DF
 global.comments.df <- NULL
 
@@ -100,20 +89,9 @@ global.comments.df <- NULL
 # register_sqlite_backend("newexample.db")
 
 
-# [1] "Using direct authentication"
-# Use a local file to cache OAuth access credentials between R sessions?
-# 1: Yes
-# 2: No
-#
-# Selection: N
-# Enter an item from the menu, or 0 to exit
-# Selection: 0
-
 root.name <- "Taxonomy"
 
 tax.data.tree <- Node$new(root.name)
-
-availableTrendLocs <- twitteR::availableTrendLocations()
 
 ###############################################################################################
 # javascript functions that handle updating.

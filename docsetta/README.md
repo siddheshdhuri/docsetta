@@ -69,6 +69,7 @@ install.packages("rCharts")
 install.packages("rjson")
 install.packages("plotly")
 install.packages("ggrepel")
+install.packages("tidytext")
 
 library(devtools)
 devtools::install_github("trestletech/shinyTree")

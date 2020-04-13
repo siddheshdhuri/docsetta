@@ -43,9 +43,14 @@ shinyServer(function(input, output, session) {
     
     inFile <- input$inputFile
     
+    
     filedata <- NULL
     
-    if (! is.null(inFile)){
+    if(input$useFile > 0){
+      
+      filedata <- reactive.values$tweets.df
+      
+    } else if (! is.null(inFile)){
       #' read in csv file
       filedata <- read.csv(inFile$datapath, header=input$header, sep=input$sep,
                            quote=input$quote, encoding = 'UTF-8', fileEncoding = 'ISO8859-1',
@@ -99,8 +104,10 @@ shinyServer(function(input, output, session) {
       filedata <- reactive.values$tweets.df
     }
     #' trim the display text to 300 chars
-    if(!is.null(filedata)) filedata$tweet <- paste(strtrim(filedata$tweet, 300),"...")
-    
+    if(!is.null(filedata)) {
+      filedata$tweet <- paste(strtrim(filedata$tweet, 300),"...")
+      colnames(filedata) = c("text", "created", "user", "id")
+    }
     return(filedata)
     
   })
@@ -696,6 +703,138 @@ shinyServer(function(input, output, session) {
     
   })
   
+  #' Basic word cloud
+  #' 
+  #' draw gist wordcloud
+  
+  observeEvent(input$getDocGist, {
+    
+    withProgress(message="Generating Document Gist...", {
+      
+      tweets.df <- reactive.values$tweets.df
+      
+      doc_gist <- NULL
+      
+      if(input$getDocGistBy == "Overall") {
+        print(colnames(tweets.df))
+        
+        tweets.df <- tweets.df %>%
+          summarise(text = paste(tweet,collapse=" <br> "))
+        
+        tidy_comments <- tweets.df %>%
+          tidytext::unnest_tokens(word, text)
+        
+        
+      }else if(input$getDocGistBy == "User") {
+        tweets.df <- tweets.df %>%
+          select(user, tweet) %>%
+          group_by(user) %>%
+          summarise(text = paste(tweet,collapse=" ")) 
+        
+        tidy_comments <- tweets.df[1,] %>%
+          tidytext::unnest_tokens(word, text)
+      }
+      
+      #' comments table
+      #' trim the display text to 300 chars
+      if(!is.null(tweets.df)) tweets.df$text <- paste(strtrim(tweets.df$text, 1000),"...")
+      
+      output$pageFilter <- renderUI({
+        val <- input$table_state$start / input$table_state$length + 1
+        numericInput("page", "Page", val, min = 1, max = nrow(tweets.df))
+      })
+      
+      output$table <- DT::renderDataTable({
+        tweets.df
+      }, filter = 'top', options = list(pageLength = 1, dom = 't', stateSave = TRUE))
+      
+      
+      #' draw gist wordcloud
+      # output$gist_cloud <- renderPlot({
+      #   tidy_comments %>%
+      #     anti_join(stop_words) %>%
+      #     count(word) %>%
+      #     with(wordcloud(word, n, max.words=100, 
+      #                    colors=brewer.pal(8, "Dark2"), scale=c(4,0.5))
+      #     )
+      #   })
+      
+      reactive.values$gistdf <- tweets.df
+      
+    })
+    
+  })
+  
+  # using new page filter
+  observe({
+    
+    if(!is.null(reactive.values$tweets.df)) {
+      print(str(reactive.values$tweets.df))
+      gistdf <- data.frame(text = reactive.values$tweets.df$tweet, stringsAsFactors=FALSE)
+      print(str(gistdf))
+      
+      tidy_comments <- gistdf %>%
+        tidytext::unnest_tokens(word, text)
+      
+      #' draw gist wordcloud
+      output$word_cloud <- renderPlot({
+        tidy_comments %>%
+          anti_join(stop_words) %>%
+          count(word) %>%
+          with(wordcloud(word, n, max.words=100, scale=c(5,0.1),
+                         colors=brewer.pal(8, "Dark2"))
+          )
+      })
+    }
+    
+    
+    
+  })
+  
+  
+  #' output$word_cloud <- renderPlot({
+  #'   
+  #'  reactive.values$tweets.df %>%
+  #'     tidytext::unnest_tokens(word, text) %>%
+  #'     anti_join(stop_words) %>%
+  #'     count(word) %>%
+  #'     with(wordcloud(word, n, max.words=100,
+  #'                    colors=brewer.pal(8, "Dark2"), scale=c(4,0.5))
+  #'     )
+  #'   
+  #' 
+  #'     
+  #' 
+  #'   #' df <- isolate(reactive.values$tweets.df)
+  #'   #' 
+  #'   #' words <- unlist(str_extract_all(df$tweet, "[:alnum:][:alnum:][:alnum:][:alnum:]+"))
+  #'   #' words.tab <- table(words)
+  #'   #' #' removing the most frequest term as this is the search term itself
+  #'   #' words <- names(words.tab[order(words.tab,decreasing = TRUE)])[-1]
+  #'   #' 
+  #'   #' words <- paste(words, collapse = " ")
+  #'   #' 
+  #'   #' dtm <- withProgress({
+  #'   #'   setProgress(message = "Processing corpus...")
+  #'   #'   getTermMatrix(words)
+  #'   #' })
+  #'   #' 
+  #'   #' #' terms <- names(dtm)
+  #'   #' #' terms.tab <- table(terms)
+  #'   #' #' #' removing the most frequest term as this is the search term itself
+  #'   #' #' terms <- names(terms.tab[order(terms.tab,decreasing = TRUE)])[-1]
+  #'   #' #' print(names(terms.tab[order(terms.tab,decreasing = TRUE)])[1])
+  #'   #' wc <- getWordCloud(names(dtm), dtm, scale=c(3,0.1),
+  #'   #'                    random.order = FALSE,rot.per=.5,vfont=c("sans serif","plain"),colors=palette()
+  #'   #'                    #min.freq = 10, max.words=50,
+  #'   #'                    #colors=brewer.pal(8, "Dark2")
+  #'   #'                    )
+  #'   #' 
+  #'   #' return(wc)
+  #'   
+  #' })
+  
+  
   
   #' plotting sentiment wordcloud
   #' 
@@ -706,11 +845,23 @@ shinyServer(function(input, output, session) {
     #' prepare text by remove special charaters, punctuation, etc..
     tweetsvector <- prepareTextForAnalysis(tweetsvector)
     #' perform sentiment analysis and get data.frame
-    sent.df <- getSentimentAnalysisDF(tweetsvector)
-    
+    sent_df <- getSentimentAnalysisDF(tweetsvector)
+
     output$sent_df <- renderTable(sent_df)
+    #' 
+    #' getSentimentAnalysisWordCloud(sent_df)
     
-    getSentimentAnalysisWordCloud(sent_df)
+    print(str(reactive.values$tweets.df))
+    tidy_comments <- reactive.values$tweets.df %>%
+      tidytext::unnest_tokens(word, tweet)
+    
+    tidy_comments %>%
+      inner_join(tidytext::get_sentiments("bing")) %>%
+      count(word, sentiment, sort=TRUE) %>%
+      reshape2::acast(word ~ sentiment, value.var ="n", fill = 0) %>%
+      comparison.cloud(colors = c("red", "blue"),
+                       max.words = 100)
+    
     
   })
   
@@ -726,7 +877,7 @@ shinyServer(function(input, output, session) {
     
     #' evaluate tweets sentiments using glmnet model
     sent_df <- withProgress({
-      setProgress(message = "Evaluating tweets with glmnet model..."
+      setProgress(message = "Evaluating comments with nlp model..."
       )
       sentimentAnalysis::getSentimentAnalysisDF(df_tweets = sent_df)
     })
@@ -1210,6 +1361,12 @@ shinyServer(function(input, output, session) {
     
   })
   
+  output$sbop <- sunburstR::renderSunburst({
+    
+    "TEST"
+    
+  })
+  
   ############################# - End Analysis Page - ###############################
   
   
@@ -1489,38 +1646,6 @@ shinyServer(function(input, output, session) {
   
   ################################## - Start Influencer Mine - ##############################
   
-  ################################## - Start Tags Mine - ##############################
-  
-  output$hashtagDonut <- plotly::renderPlotly({
-    
-    hashtags.tab <- reactive.values$tweets.df$tweet %>%
-      str_extract_all("#[:alnum:]+") %>%
-      unlist() %>%
-      table()
-    
-    #' removing the most frequest term as this is the search term itself
-    hashtags <- names(hashtags.tab[order(hashtags.tab,decreasing = TRUE)])[-1]
-    
-    hashtags.tab <- as.data.frame(hashtags.tab)
-    
-    colnames(hashtags.tab) <- c("Hashtag","Freq")
-    hashtags.tab <- hashtags.tab[order(hashtags.tab$Freq,decreasing = T),]
-    hashtags.tab <- hashtags.tab[1:50,]
-    
-    p <- hashtags.tab %>%
-      #group_by(user) %>%
-      #summarize(count = n()) %>%
-      plot_ly(labels = ~Hashtag, values = ~Freq, height="700px" ,colors = "Blues") %>%
-      add_pie(hole = 0.3) %>%
-      layout(title = "#Hashtags in this discussion",  showlegend = F,
-             xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
-             yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
-    
-    
-  })
-  
-  ################################## - End Tags Mine - ##############################
-  
   
   ################################## - Start Document Comparison - ##############################
   
@@ -1568,6 +1693,99 @@ shinyServer(function(input, output, session) {
   
   
   ################################## - End Document Comparison - ##############################
+  
+  
+  ################################## - Start Document Gist - ##############################
+  
+  
+  
+  #'##############################################################
+  #' Function to generate document gist
+  #' 
+  observeEvent(input$getDocGist, {
+    
+    withProgress(message="Generating Document Gist...", {
+      
+      tweets.df <- reactive.values$tweets.df
+      
+      doc_gist <- NULL
+      
+      if(input$getDocGistBy == "Overall") {
+        print(colnames(tweets.df))
+        
+        tweets.df <- tweets.df %>%
+        summarise(text = paste(tweet,collapse=" <br> "))
+        
+        tidy_comments <- tweets.df %>%
+                         tidytext::unnest_tokens(word, text)
+        
+        
+      }else if(input$getDocGistBy == "User") {
+        tweets.df <- tweets.df %>%
+        select(user, tweet) %>%
+        group_by(user) %>%
+        summarise(text = paste(tweet,collapse=" ")) 
+        
+        tidy_comments <- tweets.df[1,] %>%
+          tidytext::unnest_tokens(word, text)
+      }
+      
+      #' comments table
+      #' trim the display text to 300 chars
+      if(!is.null(tweets.df)) tweets.df$text <- paste(strtrim(tweets.df$text, 1000),"...")
+      
+      output$pageFilter <- renderUI({
+        val <- input$table_state$start / input$table_state$length + 1
+        numericInput("page", "Page", val, min = 1, max = nrow(tweets.df))
+      })
+      
+      output$table <- DT::renderDataTable({
+        tweets.df
+      }, filter = 'top', options = list(pageLength = 1, dom = 't', stateSave = TRUE))
+      
+      
+      #' draw gist wordcloud
+      # output$gist_cloud <- renderPlot({
+      #   tidy_comments %>%
+      #     anti_join(stop_words) %>%
+      #     count(word) %>%
+      #     with(wordcloud(word, n, max.words=100, 
+      #                    colors=brewer.pal(8, "Dark2"), scale=c(4,0.5))
+      #     )
+      #   })
+      
+      reactive.values$gistdf <- tweets.df
+      
+    })
+    
+  })
+  
+  # using new page filter
+  observeEvent(input$page, {
+    
+    #print(input$table_state$start)
+    #print(input$table_state$length)
+    #print(input$table_state$start / input$table_state$length + 1)
+    #print(nrow(reactive.values$gistdf))
+    gistdf <- data.frame(text = reactive.values$gistdf$text[input$table_state$start+1], stringsAsFactors=FALSE)
+    tidy_comments <- gistdf %>%
+      tidytext::unnest_tokens(word, text)
+    
+    #' draw gist wordcloud
+    output$gist_cloud <- renderPlot({
+      tidy_comments %>%
+        anti_join(stop_words) %>%
+        count(word) %>%
+        with(wordcloud(word, n, max.words=100, scale=c(3,0.01),
+                       colors=brewer.pal(8, "Dark2"))
+        )
+    })
+    
+    dataTableProxy("table") %>% selectPage(input$page)
+  })
+  
+  
+  ################################## - End Document Gist - ##############################
   
   
 })
