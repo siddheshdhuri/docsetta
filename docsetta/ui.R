@@ -45,7 +45,8 @@ dashboardPage(skin = "black",
                          #                        menuItem("Word Suggestions",
                          #                                      shiny::shinyUI("wordSuggestions")),
                          menuItem("Extract Entities", icon = icon("user-circle"), tabName = "extractedEntities"),
-                         menuItem("Document Comparison", icon=icon("cubes"), tabName="documentSimilarity")
+                         menuItem("Doc Comparison", icon=icon("cubes"), tabName="documentSimilarity"),
+                         menuItem("Doc Gist", icon=icon("compress"), tabName="documentGist")
                 ),
                 # actionButton("learnTopics", "Learn Topics"),
                 menuItem("Raw data", tabName = "rawdata"),
@@ -61,7 +62,8 @@ dashboardPage(skin = "black",
               tags$script(src = "https://code.highcharts.com/highcharts-more.js"),
               tags$script(src = "https://code.highcharts.com/modules/exporting.js"),
               tags$script(src = "https://code.highcharts.com/modules/heatmap.js"),
-              tags$link(rel = "stylesheet", type="text/css", href="https://fonts.googleapis.com/css?family=Open+Sans:400,600")),
+              tags$link(rel = "stylesheet", type="text/css", href="https://fonts.googleapis.com/css?family=Open+Sans:400,600"),
+              tags$style(HTML(".dataTables_filter, .dataTables_info { display: none; }"))),
     #tags$link(rel = "stylesheet", type="text/css", href="./www/sequences.css")),
     tabItems(
       
@@ -74,7 +76,6 @@ dashboardPage(skin = "black",
                                 column(6,
                                        box(width=12,title = "Load data from saved File", status = "info", 
                                            collapsible = TRUE, collapsed = FALSE,
-                                           #DT::dataTableOutput("previousSearches"),
                                            selectInput("previousSearches", label = "Select File(s) to load for analysis", multiple = TRUE,
                                                        choices = list.files("data/discussions"), selected = "Multiple_Sclerosis_Docs.RDS"),
                                            actionButton("loadData","Load")
@@ -143,9 +144,6 @@ dashboardPage(skin = "black",
                                        selectInput("user", label = "User", choices = c("None"))
                                 )
                                 
-                              ),
-                              fluidRow(
-                                # actionButton("useFile", "Okay")
                               )
                               
                      )
@@ -164,9 +162,6 @@ dashboardPage(skin = "black",
               
               #start of page content
               fluidRow(
-                #                 valueBoxOutput("rate"),
-                #                 valueBoxOutput("count"),
-                #                 valueBoxOutput("users")
                 column(width = 2,
                        numericInput("pagenum", label = "Page Number", value = 1, min = 1, step = 1)
                 ),
@@ -214,7 +209,10 @@ dashboardPage(skin = "black",
       # Sentiment Analysis
       tabItem("sentimentAnalysis",
               
-              tabBox(width = 12,
+              tabBox(width = 12, height = 600,
+                     tabPanel("Word Cloud",
+                              plotOutput("word_cloud")
+                     ),
                      tabPanel("Sentiment over time",
                               fluidRow(
                                 selectInput("chrono",label = "Analysis By", selected = "month",
@@ -223,7 +221,7 @@ dashboardPage(skin = "black",
                               )
                      ),
                      tabPanel("Sentiment Cloud", 
-                              plotOutput("sentiment_cloud")
+                              shinycssloaders::withSpinner(plotOutput("sentiment_cloud"))
                      ),
                      tabPanel("Emotion Analysis", 
                               tableOutput("sent_df")      
@@ -295,12 +293,12 @@ dashboardPage(skin = "black",
       tabItem("taxonomyAnalysis",
               
               tabBox(width = 12,
-                     # tabPanel("Taxonomy Tree", 
-                     #          shiny::plotOutput("taxonomyTree")
-                     # ),
-                     # tabPanel("High Charts", 
-                     #          rCharts::showOutput("taxPie", lib = "nvd3")
-                     # ),
+                     tabPanel("Taxonomy Tree",
+                              shiny::plotOutput("taxonomyTree")
+                     ),
+                     tabPanel("High Charts",
+                              rCharts::showOutput("taxPie", lib = "nvd3")
+                     ),
                      tabPanel("Taxonomy Network",
                               networkD3::diagonalNetworkOutput("taxonomyNetwork")
                      ),
@@ -309,6 +307,9 @@ dashboardPage(skin = "black",
                      ),
                      tabPanel("Sunburst", 
                               includeHTML("./www/index.html")
+                     ),
+                     tabPanel("Sunburst2", 
+                              sunburstR::sunburstOutput("sbop")
                      )
               )
               
@@ -366,15 +367,15 @@ dashboardPage(skin = "black",
               tabPanel(title = "Learned Topics", 
                        actionButton("learnTopics", "Learn Topics"),
                        fluidRow(
-                         box(width = 12, title = "Learned Topics",
-                             status = "primary",solidHeader= TRUE,collapsible = TRUE,
-                             shiny::uiOutput("suggestedTopics")
-                         )
-                       ),
-                       fluidRow(
                          box(width = 12, title = "View Topics",
                              status = "info", collapsible = TRUE, collapsed = TRUE,
                              shinycssloaders::withSpinner(LDAvis::visOutput("ldaviz"))
+                         )
+                       ),
+                       fluidRow(
+                         box(width = 12, title = "Add to taxonomy",
+                             status = "primary",solidHeader= TRUE,collapsible = TRUE,
+                             shiny::uiOutput("suggestedTopics")
                          )
                        )
               )
@@ -419,6 +420,41 @@ dashboardPage(skin = "black",
               fluidRow(
                 #d3heatmap::d3heatmapOutput("docHeatmap")
                 plotlyOutput("docHeatmap")
+              )
+      ),
+      
+      tabItem("documentGist",
+              
+              fluidRow(
+                column(width=4,
+                       selectInput("getDocGistBy", label = "Doc Gist By", choices = c("Overall","User","Doc id"), selected = "Overall")
+                ),
+                column(width=4,
+                       actionButton("getDocGist", "Get Gist")
+                )
+              ),
+              fluidRow(
+                HTML("Selected : Overall") 
+              ),
+              fluidRow(
+                column(width = 6, 
+                       #DT::dataTableOutput("gistcomments")
+                       fluidRow(
+                         column(12,
+                                dataTableOutput('table')
+                         ),
+                         column(10, 
+                                ""
+                         ),
+                         column(2,              
+                                # adding new page filter
+                                uiOutput("pageFilter")
+                         )
+                       )
+                ),
+                column(width = 6,
+                       plotOutput("gist_cloud")
+                )
               )
       ),
       
