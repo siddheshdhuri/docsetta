@@ -84,3 +84,5 @@ devtools::install_github("siddheshdhuri/sentimentAnalysis")
 
 #' To enable web scrapping you need to install and set up Selenium server
 #' and also phanjomjs browser
+
+#' Remember to change permission of visit sequqences
