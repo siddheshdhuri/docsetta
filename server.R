@@ -1,3 +1,5 @@
+options(shiny.maxRequestSize=100*1024^2)
+
 shinyServer(function(input, output, session) {
   
   #updateTabItems(session, "tabsmenu", selected = "annotatetab")
@@ -106,9 +108,9 @@ shinyServer(function(input, output, session) {
     #' trim the display text to 300 chars
     if(!is.null(filedata)) {
       filedata$tweet <- paste(strtrim(filedata$tweet, 300),"...")
-      colnames(filedata) = c("text", "created", "user", "id")
+      #colnames(filedata) = c("text", "created", "user", "id")
     }
-    return(filedata)
+    return(head(filedata, 10))
     
   })
   
@@ -132,14 +134,51 @@ shinyServer(function(input, output, session) {
     #' 
     #' 
     
-    tweettext <- as.character(csvdata[,input$comment])
+    selected_columns <- c(input$comment)
+    
+    tweettext <- as.character(csvdata[[input$comment]])
     # replace &amp; with & symbol
     tweettext = gsub("&amp;", "&", tweettext)
-    tweetid <- ifelse(input$ID == "None",seq(1:nrow(csvdata)),csvdata[,input$ID])
-    tweetcreated <- ifelse(input$datecreated == "None","",csvdata[,input$datecreated])
-    tweetlat <- ifelse(input$latitude == "None","",csvdata[,input$latitude])
-    tweetlon <- ifelse(input$longitude == "None","",csvdata[,input$longitude])
-    tweetuser <- ifelse(input$user == "None","",csvdata[,input$user])
+    
+    if (input$ID == "None") {
+      tweetid <- seq(1:nrow(csvdata))
+    }else{
+      tweetid <- csvdata[[input$ID]]
+      
+      selected_columns <- c(input$ID, selected_columns)
+    }
+    
+    if (input$datecreated == "None") {
+      tweetcreated <- "None"
+    }else{
+      tweetcreated <- csvdata[[input$datecreated]]
+      
+      selected_columns <- c(selected_columns, input$datecreated)
+    }
+    
+    if (input$latitude == "None") {
+      tweetlat <- "None"
+    }else{
+      tweetlat <- csvdata[[input$latitude]]
+      
+      selected_columns <- c(selected_columns, input$latitude)
+    }
+    
+    
+    if (input$longitude == "None") {
+      tweetlon <- "None"
+    }else{
+      tweetlon <- csvdata[[input$longitude]]
+      selected_columns <- c(selected_columns, input$longitude)
+    }
+    
+    if (input$user == "None") {
+      tweetuser <- "None"
+    }else{
+      tweetuser <- csvdata[[input$user]]
+      selected_columns <- c(selected_columns, input$user)
+    }
+    
     favCount <- 0
     retweetCount <- 0
     # assigning higher weight to retweet as it will proliferate trend
@@ -151,7 +190,7 @@ shinyServer(function(input, output, session) {
                                  favCount = favCount, retweetCount = retweetCount, reach = reach),
                            stringsAsFactors = FALSE)
     
-    output$contents <- renderTable(head(tweets.df))
+    output$contents <- DT::renderDataTable(csvdata[,selected_columns])
     
     reactive.values$tweets.df <- tweets.df
     
@@ -481,6 +520,27 @@ shinyServer(function(input, output, session) {
   
   
   
+  compute_taxonomy_freqs <- function(){
+    
+    treedf <- ToDataFrameTable(tax.data.tree, "pathString", "term","freq")
+    
+    corpus <- paste(reactive.values$tweets.df$tweet,collapse = " ")
+    treedf <- TaxonomyTree::computeFrequency(treedf, corpus)
+    
+    # assign back calculated freqs to tax.data.tree
+    
+    tax.data.tree <<- data.tree::FromDataFrameTable(treedf, pathName = "pathString")
+    #update taxonomy list
+    reactive.values$shiny.tree <- toShinyTreeList(tax.data.tree)
+    #update taxwords vector
+    reactive.values$taxwords <- as.character(tax.data.tree$Get('name'))
+    
+    # tax.data.tree is anyway pass by reference.
+    return(treedf)
+    
+  }
+  
+  
   
   
   #'#############################################################################################
@@ -491,12 +551,14 @@ shinyServer(function(input, output, session) {
     tax.data.tree <<- TaxonomyTree::fromShinyTreeList(input$tree)
     taxonomyname <- input$taxonomyName
     
-    treedf <- ToDataFrameTable(tax.data.tree, "pathString", "term","freq")
+    treedf <- compute_taxonomy_freqs()
+    
+    #treedf <- ToDataFrameTable(tax.data.tree, "pathString", "term","freq")
     #treedf$term <- unlist(lapply(treedf$pathString, function(x) unlist(strsplit(x,"/"))[length(unlist(strsplit(x,"/")))] ))
     
-    corpus <- paste(reactive.values$tweets.df$tweet,collapse = " ")
+    #corpus <- paste(reactive.values$tweets.df$tweet,collapse = " ")
     
-    treedf <- TaxonomyTree::computeFrequency(treedf, corpus)
+    #treedf <- TaxonomyTree::computeFrequency(treedf, corpus)
     
     filename <- ifelse(grepl(".+\\.RDS$",taxonomyname),taxonomyname,paste0(taxonomyname,".RDS"))
     
@@ -529,13 +591,6 @@ shinyServer(function(input, output, session) {
       
       #update taxwords vector
       reactive.values$taxwords <- as.character(tax.data.tree$Get('name'))
-      
-      #update sunburst csv
-      csv.df <- ToDataFrameTable(tax.data.tree, "pathString", "freq")
-      csv.df$pathString <- gsub("/","-",csv.df$pathString)
-      csv.df$pathString <- gsub(paste0(root.name,"-"),"",csv.df$pathString)
-      
-      write.table(csv.df,"./www/visit-sequences.csv", row.names = FALSE, col.names = FALSE, sep = ",")
       
     }
     
@@ -771,7 +826,7 @@ shinyServer(function(input, output, session) {
     if(!is.null(reactive.values$tweets.df)) {
       print(str(reactive.values$tweets.df))
       gistdf <- data.frame(text = reactive.values$tweets.df$tweet, stringsAsFactors=FALSE)
-      print(str(gistdf))
+      
       
       tidy_comments <- gistdf %>%
         tidytext::unnest_tokens(word, text)
@@ -851,7 +906,7 @@ shinyServer(function(input, output, session) {
     #' 
     #' getSentimentAnalysisWordCloud(sent_df)
     
-    print(str(reactive.values$tweets.df))
+    
     tidy_comments <- reactive.values$tweets.df %>%
       tidytext::unnest_tokens(word, tweet)
     
@@ -1271,11 +1326,15 @@ shinyServer(function(input, output, session) {
     #' set the global variable tax.data.tree as data.tree is pass by reference object
     tax.data.tree <<- tax.tree
     
+    compute_taxonomy_freqs()
+    
     #'set the reactive varirable taxtree which holds the ShinyTree
     reactive.values$shiny.tree <- toShinyTreeList(tax.data.tree)
     
     #update taxwords vector this will highlight words in the corpus
     reactive.values$taxwords <- as.character(tax.data.tree$Get('name'))
+    
+    updateTabItems(session, "tabsmenu", selected = "annotatetab")
     
   })
   
@@ -1361,9 +1420,15 @@ shinyServer(function(input, output, session) {
     
   })
   
-  output$sbop <- sunburstR::renderSunburst({
+  output$sunburst_chart <- sunburstR::renderSunburst({
     
-    "TEST"
+    #update sunburst csv
+    csv.df <- ToDataFrameTable(tax.data.tree, "pathString", "freq")
+    csv.df$pathString <- gsub("/","-",csv.df$pathString)
+    csv.df$pathString <- gsub(paste0(root.name,"-"),"",csv.df$pathString)
+    
+    
+    sunburstR::sunburst(csv.df)
     
   })
   
@@ -1669,7 +1734,6 @@ shinyServer(function(input, output, session) {
         
       }
       
-      print(colnames(tweets.df))
       
       #' function from LatentSematicAnalysis.R lib file
       dtm <- getDocumentTermMatrix(tweets.df, "doc", "user")
@@ -1711,7 +1775,6 @@ shinyServer(function(input, output, session) {
       doc_gist <- NULL
       
       if(input$getDocGistBy == "Overall") {
-        print(colnames(tweets.df))
         
         tweets.df <- tweets.df %>%
         summarise(text = paste(tweet,collapse=" <br> "))
@@ -1763,10 +1826,6 @@ shinyServer(function(input, output, session) {
   # using new page filter
   observeEvent(input$page, {
     
-    #print(input$table_state$start)
-    #print(input$table_state$length)
-    #print(input$table_state$start / input$table_state$length + 1)
-    #print(nrow(reactive.values$gistdf))
     gistdf <- data.frame(text = reactive.values$gistdf$text[input$table_state$start+1], stringsAsFactors=FALSE)
     tidy_comments <- gistdf %>%
       tidytext::unnest_tokens(word, text)

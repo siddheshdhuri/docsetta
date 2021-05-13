@@ -18,7 +18,7 @@ dashboardPage(skin = "black",
     
     sidebarMenu(id = "tabsmenu",
                 #menuItem("Twitter Trends", icon = icon("bolt"), tabName = "twitterTrends"),
-                menuItem("Load Data", icon = icon("comments-o"), tabName = "loadData"),
+                menuItem("Load Data", icon = icon("file-upload"), tabName = "loadData"),
                 menuItem("Annotate", icon = icon("bookmark"), tabName = "annotatetab"),
                 menuItem("Taxonomy Analysis", icon = icon("area-chart"),
                          menuItem("Charts", icon = icon("pie-chart"), tabName = "taxonomyAnalysis"),
@@ -100,7 +100,7 @@ dashboardPage(skin = "black",
                      tabPanel("Load data from CSV", 
                               fluidRow(
                                 column(2,
-                                       fileInput('inputFile', 'Choose CSV File',
+                                       fileInput('inputFile', 'Choose CSV File', 
                                                  accept=c('text/csv', 
                                                           'text/comma-separated-values,text/plain', 
                                                           '.csv'))
@@ -129,7 +129,7 @@ dashboardPage(skin = "black",
                                        selectInput("ID", label = "ID", choices = c("None"))
                                 ),
                                 column(2,
-                                       selectInput("comment", label = "Comment", choices = c("None"))
+                                       selectInput("comment", label = HTML("Comment<sup>*Required</sup>"), choices = c("None"))
                                 ),
                                 column(2,
                                        selectInput("datecreated", label = "Date Created", choices = c("None"))
@@ -148,7 +148,7 @@ dashboardPage(skin = "black",
                               
                      )
               ),
-              actionButton("useFile", "Okay"),
+              actionButton("useFile", "Apply Column Mapping"),
               shinycssloaders::withSpinner(DT::dataTableOutput("contents"))
       ),
       
@@ -166,7 +166,7 @@ dashboardPage(skin = "black",
                        numericInput("pagenum", label = "Page Number", value = 1, min = 1, step = 1)
                 ),
                 column(width = 2,
-                       numericInput("pagesize", label = "Comments per page", value = 1, min = 1, max = 10, step = 1)
+                       numericInput("pagesize", label = "Comments per page", value = 10, min = 1, max = 10, step = 1)
                 )
               ),
               fluidRow(
@@ -306,10 +306,7 @@ dashboardPage(skin = "black",
                               htmlOutput("taxTreeMap")
                      ),
                      tabPanel("Sunburst", 
-                              includeHTML("./www/index.html")
-                     ),
-                     tabPanel("Sunburst2", 
-                              sunburstR::sunburstOutput("sbop")
+                              sunburstR::sunburstOutput("sunburst_chart")
                      )
               )
               
@@ -345,7 +342,7 @@ dashboardPage(skin = "black",
                          column(2,
                                 selectInput("termSelectInput", label = "Term", choices = c("None"))
                          ),
-                         actionButton("useTaxonomyFile", "Okay")
+                         actionButton("useTaxonomyFile", "Create Taxonomy")
                        ),
                        fluidRow(
                          column(6,
@@ -353,7 +350,7 @@ dashboardPage(skin = "black",
                          ),
                          column(6,
                                 verbatimTextOutput("taxonomyView"),
-                                actionButton("applyTaxonomy","Apply Taxonomy")
+                                actionButton("applyTaxonomy","Apply Taxonomy to text data")
                          )
                        )
                        

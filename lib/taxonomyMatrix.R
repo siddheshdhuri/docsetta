@@ -66,13 +66,6 @@ paste.unique <- function(vector.words) {
   paste(unique(vector.words), collapse = ", ")
 }
 
-# xx <- aggregate(variable ~ Docs, data = non.zero.df, paste.unique)
-# 
-# 
-# yy <- getTransposeData(yaxis = "LEVEL2", xaxis = "variable", valuevar = "NumComments", non.zero.df)
-  
-#agg.cat <- getAggDataCategorical("Docs","LEVEL-1",non.zero.df)
-
 
 
 # '########################################################
@@ -151,19 +144,18 @@ getDocTermDF <- function(textdf, dict, id_col, text_col){
     
     word.counts <- stringi::stri_count_regex(comments,
                                              paste0("\\b", stringr::str_trim(term),"\\b"))
-    print(" IN HRERERERERERERERERERER ---------- >>>>>> ")
-    print(id_col)
-    print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
-    print(str(textdf))
+    
     this.df <- setNames(data.frame(textdf[[id_col]],
                                    word.counts),
                         c(id_col,term)
     )
     
+    
+    
     textdf <- merge(textdf, this.df, by=id_col)
     
   }
-  #print(textdf[textdf$tweetid == 677])
+  
   return(textdf)
   
 }
