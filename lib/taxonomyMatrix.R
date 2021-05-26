@@ -51,8 +51,16 @@ getDocTaxLongDF <- function(tax.data.tree, tweet.df){
   
   library(reshape2)
   #' melting wide df will result in length(taxwords)*length(comments) row long df
+
   long.df <- melt(docTermDF, id.vars = c("tweetid", "tweet"))
+  # browser()
+  # data.table::setDT(long.df)
+  # data.table::setkeyv(long.df, 'variable')
+  # data.table::setDT(temp.df)
+  # data.table::setkeyv(temp.df,'Term')
   
+  #merged.df <- long.df[temp.df, nomatch=0]
+  gc()
   merged.df <- merge(x=long.df,y=temp.df, by.x = "variable", by.y = "Term")
   
   non.zero.df <- merged.df[merged.df$value > 0,]
@@ -139,6 +147,8 @@ getDocTermDF <- function(textdf, dict, id_col, text_col){
   dict <- unique(tolower(dict))
   
   #docTermDF <- setNames(data.frame(textdf[[id_col]]),id_col)
+  textdf <- data.table::setDT(textdf)
+  data.table::setkeyv(textdf,id_col)
   
   for(term in dict){
     
@@ -150,11 +160,15 @@ getDocTermDF <- function(textdf, dict, id_col, text_col){
                         c(id_col,term)
     )
     
+    this.df <- data.table::setDT(this.df)
+    data.table::setkeyv(this.df,id_col)
     
-    
-    textdf <- merge(textdf, this.df, by=id_col)
+    #textdf <- merge(textdf, this.df, by=id_col)
+    textdf[[term]] <- this.df[[term]]
     
   }
+  
+  textdf <- textdf[complete.cases(textdf),]
   
   return(textdf)
   

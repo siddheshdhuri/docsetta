@@ -147,4 +147,4 @@ sent_df_global <- NULL
 doc.tax.wide.df <- NULL
 
 ############## - 
-get_memory_allocations <- function(){ sort( sapply(ls(),function(x){object.size(get(x))}))  }
+get_memory_allocations <- function(){ return(sort( sapply(ls(),function(x){object.size(get(x))}))) }

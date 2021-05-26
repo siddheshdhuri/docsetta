@@ -7,7 +7,7 @@ library(shinyjs)
 library(wordcloud)
 library(V8)
 
-dashboardPage(skin = "black", 
+dashboardPage(title = "Orox.ai", skin = "black", 
   dashboardHeader(
     title = span(tagList(icon("barcode"), "docsetta")), 
     dropdownMenuOutput("notificationMenu")
@@ -17,7 +17,7 @@ dashboardPage(skin = "black",
   dashboardSidebar(
     
     sidebarMenu(id = "tabsmenu",
-                #menuItem("Twitter Trends", icon = icon("bolt"), tabName = "twitterTrends"),
+                
                 menuItem("Load Data", icon = icon("file-upload"), tabName = "loadData"),
                 menuItem("Annotate", icon = icon("bookmark"), tabName = "annotatetab"),
                 menuItem("Taxonomy Analysis", icon = icon("area-chart"),
@@ -30,7 +30,7 @@ dashboardPage(skin = "black",
                          menuItem("Load Taxonomy",
                                   selectInput("loadTaxonomy", label = NULL, 
                                               choices = c("--Select--",list.files("./taxonomies", pattern = ".RDS")),
-                                              selected = "MA_Tax_Full.RDS"),
+                                              selected = "CoL.RDS"),
                                   menuItem("Load from CSV", tabName = "loadTaxonomyFile")
                          ),
                          menuItem("Save Taxonomy",
@@ -63,9 +63,11 @@ dashboardPage(skin = "black",
               tags$script(src = "https://code.highcharts.com/modules/exporting.js"),
               tags$script(src = "https://code.highcharts.com/modules/heatmap.js"),
               tags$link(rel = "stylesheet", type="text/css", href="https://fonts.googleapis.com/css?family=Open+Sans:400,600"),
-              tags$style(HTML(".dataTables_filter, .dataTables_info { display: none; }"))),
+              tags$style(HTML(".dataTables_filter, .dataTables_info { display: none; }"))
+              ,tags$head(tags$link(rel = "shortcut icon", href = "favicon.ico")) 
+    )
     #tags$link(rel = "stylesheet", type="text/css", href="./www/sequences.css")),
-    tabItems(
+    ,tabItems(
       
       tabItem("loadData",
               
@@ -239,11 +241,17 @@ dashboardPage(skin = "black",
       
       tabItem("matrixAnalysis",
               fluidRow(
-                column(width = 4,
-                       selectInput("vertical",label = "Vertical", choices = "")
+                column(width = 3,
+                       selectInput("vertical",label = "Rows", choices = "", multiple = TRUE, selectize = TRUE)
                 ),
-                column(width = 4,
-                       selectInput("horizontal",label = "Horizontal", choices = "")
+                column(width = 3,
+                       selectInput("horizontal",label = "Columns", choices = "", selectize = TRUE)
+                ),
+                column(width = 3,
+                       actionButton("createCrossTab", "Create Crosstab")
+                ),
+                column(width = 3,
+                       downloadButton("downloadCrossTab", "Download")
                 )
               ),
               fluidRow(
@@ -293,15 +301,15 @@ dashboardPage(skin = "black",
       tabItem("taxonomyAnalysis",
               
               tabBox(width = 12,
-                     tabPanel("Taxonomy Tree",
-                              shiny::plotOutput("taxonomyTree")
-                     ),
-                     tabPanel("High Charts",
-                              rCharts::showOutput("taxPie", lib = "nvd3")
-                     ),
-                     tabPanel("Taxonomy Network",
-                              networkD3::diagonalNetworkOutput("taxonomyNetwork")
-                     ),
+                     # tabPanel("Taxonomy Tree",
+                     #          shiny::plotOutput("taxonomyTree")
+                     # ),
+                     # tabPanel("High Charts",
+                     #          rCharts::showOutput("taxPie", lib = "nvd3")
+                     # ),
+                     # tabPanel("Taxonomy Network",
+                     #          networkD3::diagonalNetworkOutput("taxonomyNetwork")
+                     # ),
                      tabPanel("Treemap", 
                               htmlOutput("taxTreeMap")
                      ),

@@ -35,6 +35,7 @@ shinyServer(function(input, output, session) {
   })
   
   csvdata <- data.frame()
+  
   output$contents <- DT::renderDataTable({
     
     # input$file1 will be NULL initially. After the user selects
@@ -111,6 +112,8 @@ shinyServer(function(input, output, session) {
       #colnames(filedata) = c("text", "created", "user", "id")
     }
     return(head(filedata, 10))
+    
+    
     
   })
   
@@ -190,7 +193,7 @@ shinyServer(function(input, output, session) {
                                  favCount = favCount, retweetCount = retweetCount, reach = reach),
                            stringsAsFactors = FALSE)
     
-    output$contents <- DT::renderDataTable(csvdata[,selected_columns])
+    output$contents <- DT::renderDataTable(csvdata[1:10,selected_columns])
     
     reactive.values$tweets.df <- tweets.df
     
@@ -986,15 +989,15 @@ shinyServer(function(input, output, session) {
     
     return(tax.matrix)
     
-  })
+  }
+  )
   
-  observe({
+  
+  
+  observeEvent(input$createCrossTab, {
     
-    dependent <- input$horizontal
-    factors <- input$vertical
-    
-    print(dependent)
-    print(factors)
+    dependent <- isolate(input$horizontal)
+    factors <- isolate(input$vertical)
     
     if(dependent == "") return(NULL)
     
@@ -1014,13 +1017,58 @@ shinyServer(function(input, output, session) {
       )
     }
     
+    docTermMatrix <- DT::datatable(docTermMatrix, options = list(lengthMenu = c(5,10), scrollX = TRUE,
+                                                           columnDefs = list(list(
+                                                             targets = "_all",
+                                                             render = JS(
+                                                               "function(data, type, row, meta) {",
+                                                               "return type === 'display' && data != null && data.length > 100 ?",
+                                                               "'<span title=\"' + data + '\">' + data.substr(0, 100) + '...</span>' : data;",
+                                                               "}")
+                                                           ))),
+                                class = "display")
+    
     output$taxonomyMatrix <- DT::renderDataTable({
       
       docTermMatrix
       
     })
     
-  })
+  }
+  )
+  
+  
+  output$downloadCrossTab <- downloadHandler(
+    filename = function() {
+      paste("data-", Sys.Date(), ".csv", sep="")
+    },
+    content = function(file) {
+      
+      dependent <- isolate(input$horizontal)
+      factors <- isolate(input$vertical)
+      
+      if(dependent == "") return(NULL)
+      
+      formula.var <- as.formula(paste( paste(factors,collapse = "+"), paste("~",dependent)))
+      
+      if("tweetid" %in% c(factors)) {
+        docTermMatrix <- reshape2::dcast(data = non.zero.df, 
+                                         formula = formula.var, 
+                                         value.var = "variable", 
+                                         fun.aggregate = getFunction("paste.unique")
+        )
+      }else{
+        docTermMatrix <- reshape2::dcast(data = non.zero.df, 
+                                         formula = formula.var, 
+                                         value.var = "tweetid", 
+                                         fun.aggregate = length
+        )
+      }
+      
+      
+      write.csv(docTermMatrix, file, row.names = FALSE)
+    }
+  )
   
   
   
@@ -1519,80 +1567,200 @@ shinyServer(function(input, output, session) {
   
   ############################# - Start LDA Topic Modeling - #########################
   
+  #' observeEvent(input$learnTopics,{
+  #'   
+  #'   #' get current text vector
+  #'   text <- reactive.values$tweets.df$tweet
+  #'   
+  #'   #
+  #'   # Launch doFork in the asyncProcssor.R
+  #'   #
+  #'   doFork(
+  #'     refreshRateSeconds = 10,
+  #'     maxTimeSeconds = 20000, 
+  #'     expr = {
+  #'       #
+  #'       # Here goes the code to evaluate in the fork
+  #'       #
+  #'       
+  #'       # Pass a list to the message function. 
+  #'       doForkMessage(
+  #'         list(
+  #'           text="Please wait"
+  #'         )
+  #'       )
+  #'       
+  #'       # Do something expensive
+  #'       #
+  #'       corpus <- paste(reactive.values$tweets.df$tweet, collapse = " ")
+  #'       topicsandviz <- getTopicsWordsAndViz(corpus)
+  #'       
+  #'       # Return something
+  #'       return(topicsandviz)
+  #'       
+  #'     },
+  #'     onMessage = function( msg ){
+  #'       #
+  #'       # This function will handle the messages send during computation
+  #'       #
+  #'       updateActionButton(session,
+  #'                          inputId="learnTopics",
+  #'                          label=msg$text
+  #'       )
+  #'     },
+  #'     onFeedback = function( result ){
+  #'       #
+  #'       # This function will handle the results (result$data)
+  #'       #
+  #'       
+  #'       #' get suggestion from model
+  #'       tax.suggestions <- result$data$topics
+  #'       suggestion.list <- getLDASuggestionUIComponents(tax.suggestions)
+  #'       #' display suggestion 
+  #'       output$suggestedTopics <- shiny::renderUI({suggestion.list})
+  #'       
+  #'       #' display the LDA visualuzation graph
+  #'       visual <- result$data$viz
+  #'       output$ldaviz <- LDAvis::renderVis({ visual })
+  #'       
+  #'       output$notificationMenu <- renderMenu({
+  #'         dropdownMenu(type = "notifications", notificationItem(
+  #'           text = "Topics available",
+  #'           icon = icon("exclamation-triangle"),
+  #'           status = "success"
+  #'         ))
+  #'       })
+  #'       
+  #'       
+  #'       
+  #'       updateActionButton(session,
+  #'                          inputId="learnTopics",
+  #'                          label="Click here"
+  #'       )
+  #'     })
+  #'   
+  #'   
+  #' })
+  
   observeEvent(input$learnTopics,{
     
-    #' get current text vector
-    text <- reactive.values$tweets.df$tweet
+    result <- withProgress(message = "Modelling topics this can take a while", {
+      
+       get_topic_model_output(comments_df = reactive.values$tweets.df,
+                                                  comments_col = 'tweet', 
+                                                  taxonomy=tax.data.tree)
+      
+    })
     
-    #
-    # Launch doFork in the asyncProcssor.R
-    #
-    doFork(
-      refreshRateSeconds = 10,
-      maxTimeSeconds = 20000, 
-      expr = {
-        #
-        # Here goes the code to evaluate in the fork
-        #
-        
-        # Pass a list to the message function. 
-        doForkMessage(
-          list(
-            text="Please wait"
-          )
-        )
-        
-        # Do something expensive
-        #
-        corpus <- paste(reactive.values$tweets.df$tweet, collapse = " ")
-        topicsandviz <- getTopicsWordsAndViz(corpus)
-        
-        # Return something
-        return(topicsandviz)
-        
-      },
-      onMessage = function( msg ){
-        #
-        # This function will handle the messages send during computation
-        #
-        updateActionButton(session,
-                           inputId="learnTopics",
-                           label=msg$text
-        )
-      },
-      onFeedback = function( result ){
-        #
-        # This function will handle the results (result$data)
-        #
-        
-        #' get suggestion from model
-        tax.suggestions <- result$data$topics
-        suggestion.list <- getLDASuggestionUIComponents(tax.suggestions)
-        #' display suggestion 
-        output$suggestedTopics <- shiny::renderUI({suggestion.list})
-        
-        #' display the LDA visualuzation graph
-        visual <- result$data$viz
-        output$ldaviz <- LDAvis::renderVis({ visual })
-        
-        output$notificationMenu <- renderMenu({
-          dropdownMenu(type = "notifications", notificationItem(
-            text = "Topics available",
-            icon = icon("exclamation-triangle"),
-            status = "success"
-          ))
-        })
-        
-        
-        
-        updateActionButton(session,
-                           inputId="learnTopics",
-                           label="Click here"
-        )
-      })
+    #' get suggestion from model
+    suggestions <- result$terms
+    suggestion.list <- getQuantedaSuggestionUIComponents(suggestions)
+    #' display suggestion 
+    output$suggestedTopics <- shiny::renderUI({suggestion.list})
+    
+    #' display the LDA visualuzation graph
+    output$ldaviz <- renderVis({
+      createJSON(phi = result$phi, 
+                 theta = result$theta, 
+                 doc.length = result$doc.length, 
+                 vocab = result$vocab, 
+                 term.frequency = result$term.freq)
+    })
+    
     
     
   })
+  
+  
+  
+  #' observeEvent(input$learnTopics,{
+  #'   
+  #'   #' get current text vector
+  #'   text <- reactive.values$tweets.df$tweet
+  #'   
+  #'   #
+  #'   # Launch doFork in the asyncProcssor.R
+  #'   #
+  #'   doFork(
+  #'     refreshRateSeconds = 10,
+  #'     maxTimeSeconds = 20000, 
+  #'     expr = {
+  #'       #
+  #'       # Here goes the code to evaluate in the fork
+  #'       #
+  #'       
+  #'       # Pass a list to the message function. 
+  #'       doForkMessage(
+  #'         list(
+  #'           text="Please wait"
+  #'         )
+  #'       )
+  #'       
+  #'       # Do something expensive
+  #'       #
+  #'       
+  #'       lda_model_params <- get_topic_model_output(comments_df = reactive.values$tweets.df,
+  #'                                              comments_col = 'tweet', 
+  #'                                              taxonomy=tax.data.tree)
+  #'       
+  #'       # Return something
+  #'       return(lda_model_params)
+  #'       
+  #'     },
+  #'     onMessage = function( msg ){
+  #'       #
+  #'       # This function will handle the messages send during computation
+  #'       #
+  #'       updateActionButton(session,
+  #'                          inputId="learnTopics",
+  #'                          label=msg$text
+  #'       )
+  #'     },
+  #'     onFeedback = function( result ){
+  #'       #
+  #'       # This function will handle the results (result$data)
+  #'       #
+  #'       
+  #'       #' get suggestion from model
+  #'       suggestions <- result$terms
+  #'       suggestion.list <- getQuantedaSuggestionUIComponents(suggestions)
+  #'       #' display suggestion 
+  #'       output$suggestedTopics <- shiny::renderUI({suggestion.list})
+  #'       
+  #'       #' display the LDA visualuzation graph
+  #'       
+  #'       json <- createJSON(phi = slda$phi, 
+  #'                          theta = slda$theta, 
+  #'                          doc.length = ntoken(dfmt), 
+  #'                          vocab = featnames(dfmt), 
+  #'                          term.frequency = colSums(dfmt))
+  #'       
+  #'       output$ldaviz <- renderVis({
+  #'                         createJSON(phi = result$phi, 
+  #'                                    theta = result$theta, 
+  #'                                    doc.length = result$doc.length, 
+  #'                                    vocab = result$vocab, 
+  #'                                    term.frequency = result$term.freq)
+  #'                       })
+  #'       
+  #'       output$notificationMenu <- renderMenu({
+  #'         dropdownMenu(type = "notifications", notificationItem(
+  #'           text = "Topics available",
+  #'           icon = icon("exclamation-triangle"),
+  #'           status = "success"
+  #'         ))
+  #'       })
+  #'       
+  #'       
+  #'       
+  #'       updateActionButton(session,
+  #'                          inputId="learnTopics",
+  #'                          label="Click here"
+  #'       )
+  #'     })
+  #'   
+  #'   
+  #' })
   
   
   #' ###########################################################################

@@ -273,67 +273,50 @@ removeCommonTerms <- function (x, pct) {
   else x[termIndex, ]
 }
 
-
-
-
-# #'#######################################################################################
-# #' now put the documents into the format required by the lda package:
-# #' @param text.vector 
-# #' @param vocab 
-# #' 
-# #' @return document matrix
-# #' 
-# getParamenterForLDA <- function(comments){
-#   
-#   comments[is.na(comments) | comments == "NA" | comments == "na"] <- ""
-#   
-#   stop_words <- tm::stopwords("SMART")
-#   
-#   # Get n gram tokens from the comments
-#   tdm <- getNGramTokensTDM(comments,1,2)
-#   
-#   tdm <- as.matrix(tdm)
-#   
-#   #Term and frequency table
-#   tdm.term.table <- as.array(rowSums(tdm))
-#   
-#   #Get words tokens by splitting
-#   doc.list <- splitIntoTokens(comments)
-#   
-#   # Term and Frequency table
-#   doc.term.table <- table(unlist(doc.list))
-#   
-#   #remove words common between n gram token and split word tokens
-#   common.words <- intersect(names(tdm.term.table), names(doc.term.table))
-#   del <- names(doc.term.table) %in% common.words
-#   doc.term.table <- doc.term.table[!del]
-#   
-#   # merge n gram token and split word tokens
-#   term.table <- c(tdm.term.table, doc.term.table)
-#   term.table <- sort(term.table, decreasing = TRUE)
-#   
-#   
-#   # remove terms that are stop words or occur fewer than 3 times:
-#   del <- names(term.table) %in% stop_words | term.table < 3
-#   term.table <- term.table[!del]
-#   vocab <- names(term.table)
-#   
-#   #' create documents lapplying createDocument function
-#   documents <- lapply(comments, createDocument, vocab = vocab)
-#   
-#   #' #############################################################
-#   #' fit model with lda
-#   #' #############################################################
-#   
-#   
-#   # Compute some statistics related to the data set:
-#   D <- length(documents)  # number of documents 
-#   W <- length(vocab)  # number of terms in the vocab 
-#   doc.length <- sapply(documents, function(x) sum(x[2, ]))  # number of tokens per document 
-#   N <- sum(doc.length)  # total number of tokens in the data 
-#   term.frequency <- as.integer(term.table)  # frequencies of terms in the corpus
-#   
-#   
-#   return.list <- list()
-#   
-# }
+########################################################################################
+# Function to run a supervised LDA model
+# @param corpus
+# @param taxonomy
+# 
+# @return model
+# 
+get_topic_model_output <- function(comments_df, comments_col, taxonomy=NULL){
+  
+  # Create corpus
+  corp <- quanteda::corpus(comments_df, text_field = comments_col)
+  # remove html tags if any
+  corp <- gsub("</?[^>]+>", "", corp)
+  
+  # tokenise text
+  toks <- quanteda::tokens(corp, remove_punct = TRUE, remove_symbols = TRUE, remove_number = TRUE, remove_url = TRUE)
+  toks <- quanteda::tokens_remove(toks, pattern = stopwords("en")) #remove stop words
+  
+  dfmt <- quanteda::dfm(toks) %>%
+    quanteda::dfm_remove(stopwords('en'), min_nchar = 2) %>%
+    quanteda::dfm_trim(min_termfreq = 0.90, termfreq_type = "quantile",
+             max_docfreq = 0.1, docfreq_type = "prop")
+  
+  if(is.null(taxonomy)){
+    model <- seededlda::textmodel_lda(head(dfmt, 450), 6)
+  }else{
+    taxonomy <- data.tree::ToDataFrameTypeCol(taxonomy)
+    taxonomy <- taxonomy %>% select(-level_1) %>% replace(is.na(.), "") %>% unite(terms, -level_2, sep = "|") %>% group_by(level_2) %>% summarize(terms = paste(terms, collapse = '|'))
+    taxonomy <- split(unlist(stringi::stri_split_fixed(taxonomy$terms, pattern = "|", omit_empty = TRUE)), taxonomy$level_2)
+    
+    dict <- dictionary(taxonomy)
+    
+    model <- seededlda::textmodel_seededlda(dfmt, dict, residual = TRUE, min_termfreq = 10)
+  }
+  
+  return_list = list(phi = model$phi, 
+                     theta = model$theta, 
+                     doc.length = ntoken(dfmt), 
+                     vocab = featnames(dfmt), 
+                     term.frequency = colSums(dfmt),
+                     terms = seededlda::terms(model),
+                     topics = seededlda::topics(model)
+                     )
+  
+  return_list
+  
+}

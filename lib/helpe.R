@@ -516,73 +516,52 @@ getLDASuggestionUIComponents <- function(tax.suggestions) {
 } 
 
 
-# submitAsyncJob <- function(selected.word, corpus){
-#   
-#   #
-#   # Launch doFork in the asyncProcssor.R
-#   #
-#   doFork(
-#     refreshRateSeconds = 10,
-#     maxTimeSeconds = 20000, 
-#     expr = {
-#       #
-#       # Here goes the code to evaluate in the fork
-#       #
-#       
-#       # Pass a list to the message function. 
-#       doForkMessage(
-#         list(
-#           text="Please wait"
-#         )
-#       )
-#       
-#       # Do something expensive
-#       #
-#       
-#       similar.words <- getSuggestionsForWord(selected.word, corpus, reactive.values$taxwords)
-#       
-#       # Return something
-#       return(topicsandviz)
-#       
-#     },
-#     onMessage = function( msg ){
-#       #
-#       # This function will handle the messages send during computation
-#       #
-#       updateActionButton(session,
-#                          inputId="learnTopics",
-#                          label=msg$text
-#       )
-#     },
-#     onFeedback = function( result ){
-#       #
-#       # This function will handle the results (result$data)
-#       #
-#       
-#       #' get suggestion from model
-#       tax.suggestions <- result$data$topics
-#       suggestion.list <- getLDASuggestionUIComponents(tax.suggestions)
-#       #' display suggestion 
-#       output$suggestedTopics <- shiny::renderUI({suggestion.list})
-#       
-#       #' display the LDA visualuzation graph
-#       visual <- result$data$viz
-#       output$ldaviz <- LDAvis::renderVis({ visual })
-#       
-#       output$notificationMenu <- renderMenu({
-#         dropdownMenu(type = "notifications", notificationItem(
-#           text = "Topics available",
-#           icon = icon("exclamation-triangle"),
-#           status = "success"
-#         ))
-#       })
-#       
-#       
-#       
-#       updateActionButton(session,
-#                          inputId="learnTopics",
-#                          label="Click here"
-#       )
-#     })
-#   
-# }
+#'############################################################
+#' Function to transform topics suggestions from quanteda sLDA model
+#' into ui components
+#' 
+getQuantedaSuggestionUIComponents <- function(suggestions) {
+  
+  suggestions <- as.data.frame(suggestions)
+  #' list that will containt the UI components: textbox, checkboxes and button
+  #' for selecting and adding topic words
+  suggestions.list <- list()
+  
+  #' for every topic in the model create ui components
+  i <- 1
+  for(col in colnames(suggestions)){
+    
+    topic <- col
+    words <- suggestions[[col]]
+    
+    check.boxes <- checkboxGroupInput(inputId =  paste0("tax",i), label =  NULL,
+                                      choices =  words, inline = TRUE)
+    
+    topic.name <- textInput(inputId =  paste0("taxname",i), label =  NULL,
+                            value = topic, width = 100)
+    
+    
+    
+    addButton <- addToTax(paste0("addToTax",i), "Add")
+    
+    this_item <- fluidRow(
+                    column(2,
+                           topic.name
+                    ),
+                    column(8,
+                           check.boxes
+                    ),
+                    column(2,
+                           addButton
+                    )
+                  )
+    
+    suggestions.list[[i]] <- this_item
+    
+    i = i+1
+    
+  }
+  
+  return(suggestions.list)
+} 
+
