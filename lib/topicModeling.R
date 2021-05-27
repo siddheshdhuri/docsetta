@@ -280,7 +280,7 @@ removeCommonTerms <- function (x, pct) {
 # 
 # @return model
 # 
-get_topic_model_output <- function(comments_df, comments_col, taxonomy=NULL){
+get_topic_model_output <- function(comments_df, comments_col, number_of_words_per_topic=10, taxonomy=NULL){
   
   # Create corpus
   corp <- quanteda::corpus(comments_df, text_field = comments_col)
@@ -313,7 +313,7 @@ get_topic_model_output <- function(comments_df, comments_col, taxonomy=NULL){
                      doc.length = ntoken(dfmt), 
                      vocab = featnames(dfmt), 
                      term.frequency = colSums(dfmt),
-                     terms = seededlda::terms(model),
+                     terms = seededlda::terms(model, n = number_of_words_per_topic),
                      topics = seededlda::topics(model)
                      )
   

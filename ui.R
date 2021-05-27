@@ -41,7 +41,7 @@ dashboardPage(title = "Orox.ai", skin = "black",
                 ),
                 menuItem("Computational Linguistics", icon = icon("android"),
                          menuSubItem("Sentiment Analysis", icon = icon("smile-o"), tabName = "sentimentAnalysis"),
-                         menuSubItem("View Learned Topics", icon = icon("book"), tabName = "lda"),
+                         menuSubItem("Learn Topics", icon = icon("book"), tabName = "lda"),
                          #                        menuItem("Word Suggestions",
                          #                                      shiny::shinyUI("wordSuggestions")),
                          menuItem("Extract Entities", icon = icon("user-circle"), tabName = "extractedEntities"),
@@ -369,9 +369,22 @@ dashboardPage(title = "Orox.ai", skin = "black",
       #' topic modelling using LDA
       tabItem("lda",
               
-              tabPanel(title = "Learned Topics", 
-                       actionButton("learnTopics", "Learn Topics"),
+              tabPanel(title = "Model Topics", 
                        fluidRow(
+                         column(width=2,
+                            actionButton("learnTopics", "Model Topics")
+                         )
+                         ,column(width=2,
+                            checkboxInput("supervisedLDA", "Use my taxonomy as seed for topic modelling", TRUE)
+                         )
+                         ,column(width=2,
+                            numericInput("number_of_words_per_topic", "Words per topic", value = 10)
+                         )
+                         ,column(width=6,
+                                 HTML("<p></p>")
+                         )
+                       )
+                       ,fluidRow(
                          box(width = 12, title = "View Topics",
                              status = "info", collapsible = TRUE, collapsed = TRUE,
                              shinycssloaders::withSpinner(LDAvis::visOutput("ldaviz"))

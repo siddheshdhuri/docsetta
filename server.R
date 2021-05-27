@@ -1646,9 +1646,17 @@ shinyServer(function(input, output, session) {
     
     result <- withProgress(message = "Modelling topics this can take a while", {
       
-       get_topic_model_output(comments_df = reactive.values$tweets.df,
-                                                  comments_col = 'tweet', 
-                                                  taxonomy=tax.data.tree)
+       if(input$supervisedLDA){
+         get_topic_model_output(comments_df = reactive.values$tweets.df,
+                                comments_col = 'tweet', 
+                                number_of_words_per_topic = input$number_of_words_per_topic,
+                                taxonomy=tax.data.tree)
+       }else{
+         get_topic_model_output(comments_df = reactive.values$tweets.df,
+                                comments_col = 'tweet', 
+                                number_of_words_per_topic = input$number_of_words_per_topic,
+                                taxonomy=NULL)
+       }
       
     })
     
@@ -1792,9 +1800,13 @@ shinyServer(function(input, output, session) {
     
     terms <- setdiff(terms,concept)
     
-    #' data.tree is pass by reference
-    #' Add the concept term to taxonomy tree
-    TaxonomyTree::addTerm(tax.data.tree, concept)
+    # check if concept already exists
+    parent <- FindNode(tax.data.tree, concept)
+    if(is.null(parent)){
+      #' data.tree is pass by reference
+      #' Add the concept term to taxonomy tree
+      TaxonomyTree::addTerm(tax.data.tree, concept)
+    }
     
     #' add the checked items as childred of the
     for(term in terms){
