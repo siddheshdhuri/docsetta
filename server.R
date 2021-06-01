@@ -1658,7 +1658,7 @@ shinyServer(function(input, output, session) {
       # tokenise text
       toks <- quanteda::tokens(corp, remove_punct = TRUE, remove_symbols = TRUE, remove_number = TRUE, remove_url = TRUE) 
       
-      context_df <- kwic(toks, pattern = phrase(paste0(input$phrase_to_explore,'*')))
+      context_df <- quanteda::kwic(toks, pattern = phrase(paste0(input$phrase_to_explore,'*')))
       context_df <- as.data.frame(context_df)
       context_df <- context_df %>% dplyr::select(pre, keyword, post)
       

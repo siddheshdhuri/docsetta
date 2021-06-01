@@ -51,7 +51,7 @@ library(rjson)
 library(plotly)
 library(RCurl)
 library(tidytext)
-
+library(quanteda)
 rm(list=ls())
 
 options(encoding = 'utf-8')
