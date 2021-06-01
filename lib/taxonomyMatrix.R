@@ -1,8 +1,8 @@
 
-getDocTaxLongDF <- function(tax.data.tree, tweet.df){
+getDocTaxLongDF <- function(tax.data.tree, text.df){
   
-  comments <- tweet.df$tweet
-  tweedids <- tweet.df$tweetid
+  comments <- text.df$text
+  tweedids <- text.df$textid
   taxwords <- as.character(tax.data.tree$Get('name'))
   
   options(stringsAsFactors = FALSE)
@@ -47,12 +47,12 @@ getDocTaxLongDF <- function(tax.data.tree, tweet.df){
   #' remove first word which is the root of the tree: 'taxonomy'
   taxwords <- taxwords[2:length(taxwords)]
   
-  docTermDF <- getDocTermDF(tweet.df, taxwords, "tweetid","tweet")
+  docTermDF <- getDocTermDF(text.df, taxwords, "textid","text")
   
   library(reshape2)
   #' melting wide df will result in length(taxwords)*length(comments) row long df
 
-  long.df <- melt(docTermDF, id.vars = c("tweetid", "tweet"))
+  long.df <- melt(docTermDF, id.vars = c("textid", "text"))
   # browser()
   # data.table::setDT(long.df)
   # data.table::setkeyv(long.df, 'variable')
@@ -179,21 +179,21 @@ getDocTermDF <- function(textdf, dict, id_col, text_col){
 #'#############################################################################
 #' Function to get Wide data.frame for Document Taxonomy
 #' 
-getDocTaxWideDF <- function(selected.level, tax.data.tree, tweet.df, non.zero.long.df = NULL) {
+getDocTaxWideDF <- function(selected.level, tax.data.tree, text.df, non.zero.long.df = NULL) {
   
   if(is.null(non.zero.long.df)){
-    non.zero.long.df <- getDocTaxLongDF(tax.data.tree,tweet.df)
+    non.zero.long.df <- getDocTaxLongDF(tax.data.tree,text.df)
   }
   
   #' creating wide data.frame
   levelones <- unique(non.zero.long.df$LEVEL1)
   
   first.levelone <- levelones[1]
-  query.str <- sprintf("select tweetid, %s as %s_TERM,
+  query.str <- sprintf("select textid, %s as %s_TERM,
                        sum(value) as %s_TERM_FREQ
                        from 'non.zero.long.df' 
                        where LEVEL1 = '%s' 
-                       group by tweetid, %s ;",
+                       group by textid, %s ;",
                        selected.level,
                        gsub(" ","_",first.levelone),
                        gsub(" ","_",first.levelone),
@@ -208,11 +208,11 @@ getDocTaxWideDF <- function(selected.level, tax.data.tree, tweet.df, non.zero.lo
     #' subset data for this.levelone
     
     #' define sql style query 
-    query.str <- sprintf("select tweetid, %s as %s_TERM,
+    query.str <- sprintf("select textid, %s as %s_TERM,
                          sum(value) as %s_TERM_FREQ
                          from 'non.zero.long.df' 
                          where LEVEL1 = '%s' 
-                         group by tweetid, %s ;",
+                         group by textid, %s ;",
                          selected.level,
                          gsub(" ","_",this.levelone),
                          gsub(" ","_",this.levelone),
@@ -226,7 +226,7 @@ getDocTaxWideDF <- function(selected.level, tax.data.tree, tweet.df, non.zero.lo
     #' merge subset data by Doc id
     doc.tax.wide.df <- merge(x=doc.tax.wide.df,
                              y=subset_data, 
-                             by = "tweetid", all = TRUE)
+                             by = "textid", all = TRUE)
     
   }
   
@@ -246,11 +246,11 @@ getHeatmapDF <- function(doc.tax.wide.df, xcol, ycol){
     ycol <- paste0(gsub(" ","_",ycol),"_TERM")
   }
   
-  heatmap_df <- doc.tax.wide.df[,c("tweetid",xcol, ycol)]
+  heatmap_df <- doc.tax.wide.df[,c("textid",xcol, ycol)]
   
   #print(unique(heatmap_df$Side_Effects_TERM))
   #' subset 
-  qry <- sprintf("select %s, %s, count(distinct tweetid) as value from heatmap_df group by %s, %s ;",
+  qry <- sprintf("select %s, %s, count(distinct textid) as value from heatmap_df group by %s, %s ;",
                  xcol, ycol,xcol, ycol)
   
   heatmap_df <- sqldf::sqldf(qry)

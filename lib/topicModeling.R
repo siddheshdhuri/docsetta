@@ -280,7 +280,11 @@ removeCommonTerms <- function (x, pct) {
 # 
 # @return model
 # 
-get_topic_model_output <- function(comments_df, comments_col, number_of_words_per_topic=10, taxonomy=NULL){
+get_topic_model_output <- function(comments_df, comments_col, 
+                                   number_of_words_per_topic=10, 
+                                   n_grams = 1,
+                                   words_to_exclude=NULL,
+                                   taxonomy=NULL){
   
   # Create corpus
   corp <- quanteda::corpus(comments_df, text_field = comments_col)
@@ -288,8 +292,14 @@ get_topic_model_output <- function(comments_df, comments_col, number_of_words_pe
   corp <- gsub("</?[^>]+>", "", corp)
   
   # tokenise text
-  toks <- quanteda::tokens(corp, remove_punct = TRUE, remove_symbols = TRUE, remove_number = TRUE, remove_url = TRUE)
-  toks <- quanteda::tokens_remove(toks, pattern = stopwords("en")) #remove stop words
+  toks <- quanteda::tokens(corp, remove_punct = TRUE, remove_symbols = TRUE, remove_number = TRUE, remove_url = TRUE) %>%
+    quanteda::tokens_remove(pattern = stopwords("en")) %>% 
+    quanteda::tokens_select(min_nchar = 2) %>%
+    quanteda::tokens_remove(words_to_exclude)
+  
+  if(n_grams > 1){
+    toks <- quanteda::tokens_ngrams(toks, n = n_grams)
+  }
   
   dfmt <- quanteda::dfm(toks) %>%
     quanteda::dfm_remove(stopwords('en'), min_nchar = 2) %>%

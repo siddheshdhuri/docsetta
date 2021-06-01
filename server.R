@@ -9,10 +9,10 @@ shinyServer(function(input, output, session) {
   
   reactive.values <- reactiveValues()
   
-  #' reactive data.frame storing tweets
-  reactive.values$tweets.df <- NULL
+  #' reactive data.frame storing texts
+  reactive.values$comments.df <- NULL
   
-  #' reactive data.frame storing tweets data.frame
+  #' reactive data.frame storing texts data.frame
   # reactive.values$taxonomy.df <- data.frame()
   
   #' reactive data.frame taxonomy shiny.tree
@@ -21,17 +21,17 @@ shinyServer(function(input, output, session) {
   #' reactive character vector of all taxonomy words
   reactive.values$taxwords <- character()
   
-  reactive.values$selectedTweet <- data.frame()
+  reactive.values$selectedtext <- data.frame()
   
   reactive.values$user.info <- NULL
-  reactive.values$user.tweets <- NULL
+  reactive.values$user.texts <- NULL
   reactive.values$user.review.list <- c()
   
   
   ################################# - Load Data Page - #################################################
   
   observeEvent(input$resetData,{
-    reactive.values$tweets.df <- global.comments.df
+    reactive.values$comments.df <- global.comments.df
   })
   
   csvdata <- data.frame()
@@ -51,7 +51,7 @@ shinyServer(function(input, output, session) {
     
     if(input$useFile > 0){
       
-      filedata <- reactive.values$tweets.df
+      filedata <- reactive.values$comments.df
       
     } else if (! is.null(inFile)){
       #' read in csv file
@@ -98,17 +98,17 @@ shinyServer(function(input, output, session) {
         
       }
       
-      filedata <- data.frame(tweetid = seq(1:numfiles),
+      filedata <- data.frame(textid = seq(1:numfiles),
                             user = filestoload$name,
-                            tweet = filestxt)
-      reactive.values$tweets.df <- filedata
+                            text = filestxt)
+      reactive.values$comments.df <- filedata
       
     }else{
-      filedata <- reactive.values$tweets.df
+      filedata <- reactive.values$comments.df
     }
     #' trim the display text to 300 chars
     if(!is.null(filedata)) {
-      filedata$tweet <- paste(strtrim(filedata$tweet, 300),"...")
+      filedata$text <- paste(strtrim(filedata$text, 300),"...")
       #colnames(filedata) = c("text", "created", "user", "id")
     }
     return(head(filedata, 10))
@@ -139,66 +139,66 @@ shinyServer(function(input, output, session) {
     
     selected_columns <- c(input$comment)
     
-    tweettext <- as.character(csvdata[[input$comment]])
+    text <- as.character(csvdata[[input$comment]])
     # replace &amp; with & symbol
-    tweettext = gsub("&amp;", "&", tweettext)
+    text = gsub("&amp;", "&", text)
     
     if (input$ID == "None") {
-      tweetid <- seq(1:nrow(csvdata))
+      textid <- seq(1:nrow(csvdata))
     }else{
-      tweetid <- csvdata[[input$ID]]
+      textid <- csvdata[[input$ID]]
       
       selected_columns <- c(input$ID, selected_columns)
     }
     
     if (input$datecreated == "None") {
-      tweetcreated <- "None"
+      textcreated <- "None"
     }else{
-      tweetcreated <- csvdata[[input$datecreated]]
+      textcreated <- csvdata[[input$datecreated]]
       
       selected_columns <- c(selected_columns, input$datecreated)
     }
     
     if (input$latitude == "None") {
-      tweetlat <- "None"
+      textlat <- "None"
     }else{
-      tweetlat <- csvdata[[input$latitude]]
+      textlat <- csvdata[[input$latitude]]
       
       selected_columns <- c(selected_columns, input$latitude)
     }
     
     
     if (input$longitude == "None") {
-      tweetlon <- "None"
+      textlon <- "None"
     }else{
-      tweetlon <- csvdata[[input$longitude]]
+      textlon <- csvdata[[input$longitude]]
       selected_columns <- c(selected_columns, input$longitude)
     }
     
     if (input$user == "None") {
-      tweetuser <- "None"
+      textuser <- "None"
     }else{
-      tweetuser <- csvdata[[input$user]]
+      textuser <- csvdata[[input$user]]
       selected_columns <- c(selected_columns, input$user)
     }
     
     favCount <- 0
-    retweetCount <- 0
-    # assigning higher weight to retweet as it will proliferate trend
+    retextCount <- 0
+    # assigning higher weight to retext as it will proliferate trend
     reach <- 0
     
     
-    tweets.df = data.frame(cbind(tweetid= tweetid, tweet=tweettext,tweetcreated=tweetcreated,
-                                 lat=tweetlat,lon=tweetlon, user=tweetuser,
-                                 favCount = favCount, retweetCount = retweetCount, reach = reach),
+    comments.df = data.frame(cbind(textid= textid, text=text,textcreated=textcreated,
+                                 lat=textlat,lon=textlon, user=textuser,
+                                 favCount = favCount, retextCount = retextCount, reach = reach),
                            stringsAsFactors = FALSE)
     
     output$contents <- DT::renderDataTable(csvdata[1:10,selected_columns])
     
-    reactive.values$tweets.df <- tweets.df
+    reactive.values$comments.df <- comments.df
     
     #'set global comments df
-    global.comments.df <<- tweets.df
+    global.comments.df <<- comments.df
   })
   
   #############################################################################
@@ -223,23 +223,23 @@ shinyServer(function(input, output, session) {
     files.to.load <- paste0(path,files.selected)
     
     #load for the first file
-    tweets.df <- readRDS(files.to.load[1])
+    comments.df <- readRDS(files.to.load[1])
     
     #' if more than one file selected load data for other files
     i <- 2
     while(i <= length(files.to.load)){
-      tweets.df <- rbind(tweets.df,
+      comments.df <- rbind(comments.df,
                          readRDS(files.to.load[i]))
       i <- i+1
     }
     
     # replace &amp; with & symbol
-    tweets.df$tweet = gsub("&amp;", "&", tweets.df$tweet)
+    comments.df$text = gsub("&amp;", "&", comments.df$text)
     
-    #' if tweetid column is null set id column as 1 to num of documents
-    if(is.null(tweets.df$tweetid)) tweets.df$tweetid <- 1:nrow(tweets.df)
+    #' if textid column is null set id column as 1 to num of documents
+    if(is.null(comments.df$textid)) comments.df$textid <- 1:nrow(comments.df)
     
-    reactive.values$tweets.df <- tweets.df
+    reactive.values$comments.df <- comments.df
     
   })
   
@@ -254,10 +254,10 @@ shinyServer(function(input, output, session) {
   #'
   output$annotate <- renderUI({
     
-    tweets.df <- reactive.values$tweets.df
+    comments.df <- reactive.values$comments.df
     
-    if(nrow(tweets.df) < 1)
-      return("No Tweets were found.")
+    if(nrow(comments.df) < 1)
+      return("No texts were found.")
     ia <- inputAnnotate("selectable", value = HTML(tagged_verbatim()))
     
     return(ia)
@@ -318,7 +318,7 @@ shinyServer(function(input, output, session) {
     reactive.values$taxwords <- as.character(tax.data.tree$Get('name'))
     
     #' get suggestion for word
-    corpus <- paste(reactive.values$tweets.df$tweet, collapse = "")
+    corpus <- paste(reactive.values$comments.df$text, collapse = "")
     
     output$wordSuggestions <- renderUI({ 
       
@@ -399,10 +399,10 @@ shinyServer(function(input, output, session) {
     #' add word boundaries between words
     pattern <- paste(key.words, collapse = "\\b|\\b")
     pattern <- paste0("\\b",pattern,"\\b")
-    index <- grepl(pattern = pattern, reactive.values$tweets.df$tweet, ignore.case = T)
+    index <- grepl(pattern = pattern, reactive.values$comments.df$text, ignore.case = T)
     
     #' keep only comments discussing about selected topics
-    reactive.values$tweets.df <- reactive.values$tweets.df[index,]
+    reactive.values$comments.df <- reactive.values$comments.df[index,]
     
   })
   
@@ -527,7 +527,7 @@ shinyServer(function(input, output, session) {
     
     treedf <- ToDataFrameTable(tax.data.tree, "pathString", "term","freq")
     
-    corpus <- paste(reactive.values$tweets.df$tweet,collapse = " ")
+    corpus <- paste(reactive.values$comments.df$text,collapse = " ")
     treedf <- TaxonomyTree::computeFrequency(treedf, corpus)
     
     # assign back calculated freqs to tax.data.tree
@@ -559,7 +559,7 @@ shinyServer(function(input, output, session) {
     #treedf <- ToDataFrameTable(tax.data.tree, "pathString", "term","freq")
     #treedf$term <- unlist(lapply(treedf$pathString, function(x) unlist(strsplit(x,"/"))[length(unlist(strsplit(x,"/")))] ))
     
-    #corpus <- paste(reactive.values$tweets.df$tweet,collapse = " ")
+    #corpus <- paste(reactive.values$comments.df$text,collapse = " ")
     
     #treedf <- TaxonomyTree::computeFrequency(treedf, corpus)
     
@@ -629,35 +629,35 @@ shinyServer(function(input, output, session) {
   
   
   
-  ############################## - Start Tweet Map - #############################
+  ############################## - Start text Map - #############################
   #' Map
   
   output$map <- renderLeaflet({
     
-    tweets.with.location <- reactive.values$tweets.df
+    texts.with.location <- reactive.values$comments.df
     
-    if (length(tweets.with.location) == 0)
+    if (length(texts.with.location) == 0)
       return(NULL)
     
     # Show only selected directions
-    complete.coordinates <- complete.cases(tweets.with.location[,c("lon","lat")])
+    complete.coordinates <- complete.cases(texts.with.location[,c("lon","lat")])
     
     if(length(complete.coordinates) < 1) return (NULL)
     
-    tweets.with.location <- tweets.with.location[complete.coordinates,]
+    texts.with.location <- texts.with.location[complete.coordinates,]
     
-    radius <- (as.numeric(tweets.with.location$retweetCount) + as.numeric(tweets.with.location$favCount))
+    radius <- (as.numeric(texts.with.location$retextCount) + as.numeric(texts.with.location$favCount))
     radius <- scales::rescale(radius,to = c(1,100))
     
-    tweets.with.location$lon <- as.numeric(tweets.with.location$lon)
-    tweets.with.location$lat <- as.numeric(tweets.with.location$lat)
+    texts.with.location$lon <- as.numeric(texts.with.location$lon)
+    texts.with.location$lat <- as.numeric(texts.with.location$lat)
     
-    map <- leaflet(tweets.with.location) %>%
+    map <- leaflet(texts.with.location) %>%
       addTiles() %>%
       setView(lng = -0.0, lat = 51.5, zoom = 4) %>%
-      addMarkers(lng = ~lon, lat= ~lat, layerId = ~tweetid, label = ~user)
+      addMarkers(lng = ~lon, lat= ~lat, layerId = ~textid, label = ~user)
     
-    # map <- leaflet(tweets.with.location) %>%
+    # map <- leaflet(texts.with.location) %>%
     #   addTiles('http://{s}.tile.thunderforest.com/transport/{z}/{x}/{y}.png') %>%
     #   setView(lng = -0.0, lat = 51.5, zoom = 4) %>%
     #   addCircleMarkers(
@@ -666,7 +666,7 @@ shinyServer(function(input, output, session) {
     #     color = "blue",
     #     opacity = 0.8,
     #     radius = radius,
-    #     layerId = ~tweetid
+    #     layerId = ~textid
     #   )
     
     
@@ -674,7 +674,7 @@ shinyServer(function(input, output, session) {
   })
   # END MAP
   
-  # When map is clicked, show a popup with tweet info
+  # When map is clicked, show a popup with text info
   observe({
     
     leafletProxy("map") %>% clearPopups()
@@ -683,7 +683,7 @@ shinyServer(function(input, output, session) {
       return()
     
     isolate({
-      showTweetPopup(event$id, event$lat, event$lng)
+      showtextPopup(event$id, event$lat, event$lng)
     })
   })
   
@@ -691,26 +691,26 @@ shinyServer(function(input, output, session) {
   #'#################################################################################################
   #'Function to generate popup content when user clicks on map
   #'
-  showTweetPopup <- function(tweetid, lat, lng) {
+  showtextPopup <- function(textid, lat, lng) {
     
-    isolate(tweets.df <- reactive.values$tweets.df)
+    isolate(comments.df <- reactive.values$comments.df)
     
-    selectedTweet <- tweets.df[tweets.df$tweetid == tweetid,]
+    selectedtext <- comments.df[comments.df$textid == textid,]
     
     content <- as.character(tagList(
-      #tags$h4(selectedTweet$tweet),
-      inputAnnotate("selectablepopup", selectedTweet$tweet),
+      #tags$h4(selectedtext$text),
+      inputAnnotate("selectablepopup", selectedtext$text),
       tags$strong(HTML(sprintf("%s",
-                               selectedTweet$user
+                               selectedtext$user
       ))),
       tags$br(),
-      sprintf("Favourited: %s", selectedTweet$favCount), tags$br(),
-      sprintf("Retweeted: %s", selectedTweet$retweetCount), tags$br()
+      sprintf("Favourited: %s", selectedtext$favCount), tags$br(),
+      sprintf("Retexted: %s", selectedtext$retextCount), tags$br()
     ))
     
     leafletProxy("map") %>% addPopups(lng, lat, content)
     
-    reactive.values$selectedTweet <- selectedTweet
+    reactive.values$selectedtext <- selectedtext
   }
   
   
@@ -719,7 +719,7 @@ shinyServer(function(input, output, session) {
   
   #############################- START Twitter Analysis #######################################
   
-  ############################# - End Tweet Map - ###############################
+  ############################# - End text Map - ###############################
   
   #' Function to get the text for current display
   #'
@@ -729,14 +729,14 @@ shinyServer(function(input, output, session) {
     step.size <- input$pagesize
     
     #' update page numner numeric input max limit to nrow / step size
-    updateNumericInput(session, "pagenum", max = nrow(reactive.values$tweets.df) / step.size)
+    updateNumericInput(session, "pagenum", max = nrow(reactive.values$comments.df) / step.size)
     
     last.row <- page.num*step.size
     first.row <- last.row - (step.size - 1)
     
-    last.row <- min(last.row, nrow(reactive.values$tweets.df))
+    last.row <- min(last.row, nrow(reactive.values$comments.df))
     
-    text <- reactive.values$tweets.df$tweet[first.row:last.row]
+    text <- reactive.values$comments.df$text[first.row:last.row]
     
     display.text <- paste(text, collapse = "<br><hr><br>")
     
@@ -747,9 +747,9 @@ shinyServer(function(input, output, session) {
   
   output$sentimentplot <- renderDygraph({
     
-    tweets.df <- reactive.values$tweets.df
+    comments.df <- reactive.values$comments.df
     time.break <- input$chrono
-    sentimentplot.data <- getSentimentAnalysis(tweets.df, time.break = time.break)
+    sentimentplot.data <- getSentimentAnalysis(comments.df, time.break = time.break)
     
     dygraph(sentimentplot.data, main = "Sentiment Analysis") %>%
       dySeries("sentiment.data", drawPoints = TRUE, color = "blue", strokeWidth=3) %>%
@@ -769,41 +769,41 @@ shinyServer(function(input, output, session) {
     
     withProgress(message="Generating Document Gist...", {
       
-      tweets.df <- reactive.values$tweets.df
+      comments.df <- reactive.values$comments.df
       
       doc_gist <- NULL
       
       if(input$getDocGistBy == "Overall") {
-        print(colnames(tweets.df))
+        print(colnames(comments.df))
         
-        tweets.df <- tweets.df %>%
-          summarise(text = paste(tweet,collapse=" <br> "))
+        comments.df <- comments.df %>%
+          summarise(text = paste(text,collapse=" <br> "))
         
-        tidy_comments <- tweets.df %>%
+        tidy_comments <- comments.df %>%
           tidytext::unnest_tokens(word, text)
         
         
       }else if(input$getDocGistBy == "User") {
-        tweets.df <- tweets.df %>%
-          select(user, tweet) %>%
+        comments.df <- comments.df %>%
+          select(user, text) %>%
           group_by(user) %>%
-          summarise(text = paste(tweet,collapse=" ")) 
+          summarise(text = paste(text,collapse=" ")) 
         
-        tidy_comments <- tweets.df[1,] %>%
+        tidy_comments <- comments.df[1,] %>%
           tidytext::unnest_tokens(word, text)
       }
       
       #' comments table
       #' trim the display text to 300 chars
-      if(!is.null(tweets.df)) tweets.df$text <- paste(strtrim(tweets.df$text, 1000),"...")
+      if(!is.null(comments.df)) comments.df$text <- paste(strtrim(comments.df$text, 1000),"...")
       
       output$pageFilter <- renderUI({
         val <- input$table_state$start / input$table_state$length + 1
-        numericInput("page", "Page", val, min = 1, max = nrow(tweets.df))
+        numericInput("page", "Page", val, min = 1, max = nrow(comments.df))
       })
       
       output$table <- DT::renderDataTable({
-        tweets.df
+        comments.df
       }, filter = 'top', options = list(pageLength = 1, dom = 't', stateSave = TRUE))
       
       
@@ -817,7 +817,7 @@ shinyServer(function(input, output, session) {
       #     )
       #   })
       
-      reactive.values$gistdf <- tweets.df
+      reactive.values$gistdf <- comments.df
       
     })
     
@@ -826,9 +826,9 @@ shinyServer(function(input, output, session) {
   # using new page filter
   observe({
     
-    if(!is.null(reactive.values$tweets.df)) {
-      print(str(reactive.values$tweets.df))
-      gistdf <- data.frame(text = reactive.values$tweets.df$tweet, stringsAsFactors=FALSE)
+    if(!is.null(reactive.values$comments.df)) {
+      
+      gistdf <- data.frame(text = reactive.values$comments.df$text, stringsAsFactors=FALSE)
       
       
       tidy_comments <- gistdf %>%
@@ -852,7 +852,7 @@ shinyServer(function(input, output, session) {
   
   #' output$word_cloud <- renderPlot({
   #'   
-  #'  reactive.values$tweets.df %>%
+  #'  reactive.values$comments.df %>%
   #'     tidytext::unnest_tokens(word, text) %>%
   #'     anti_join(stop_words) %>%
   #'     count(word) %>%
@@ -863,9 +863,9 @@ shinyServer(function(input, output, session) {
   #' 
   #'     
   #' 
-  #'   #' df <- isolate(reactive.values$tweets.df)
+  #'   #' df <- isolate(reactive.values$comments.df)
   #'   #' 
-  #'   #' words <- unlist(str_extract_all(df$tweet, "[:alnum:][:alnum:][:alnum:][:alnum:]+"))
+  #'   #' words <- unlist(str_extract_all(df$text, "[:alnum:][:alnum:][:alnum:][:alnum:]+"))
   #'   #' words.tab <- table(words)
   #'   #' #' removing the most frequest term as this is the search term itself
   #'   #' words <- names(words.tab[order(words.tab,decreasing = TRUE)])[-1]
@@ -898,20 +898,20 @@ shinyServer(function(input, output, session) {
   #' 
   output$sentiment_cloud <- renderPlot({
     
-    #' get tweets vector from the reactive tweets data.frame
-    tweetsvector <- reactive.values$tweets.df$tweet
+    #' get texts vector from the reactive texts data.frame
+    textsvector <- reactive.values$comments.df$text
     #' prepare text by remove special charaters, punctuation, etc..
-    tweetsvector <- prepareTextForAnalysis(tweetsvector)
+    textsvector <- prepareTextForAnalysis(textsvector)
     #' perform sentiment analysis and get data.frame
-    sent_df <- getSentimentAnalysisDF(tweetsvector)
+    sent_df <- getSentimentAnalysisDF(textsvector)
 
     output$sent_df <- renderTable(sent_df)
     #' 
     #' getSentimentAnalysisWordCloud(sent_df)
     
     
-    tidy_comments <- reactive.values$tweets.df %>%
-      tidytext::unnest_tokens(word, tweet)
+    tidy_comments <- reactive.values$comments.df %>%
+      tidytext::unnest_tokens(word, text)
     
     tidy_comments %>%
       inner_join(tidytext::get_sentiments("bing")) %>%
@@ -924,16 +924,16 @@ shinyServer(function(input, output, session) {
   })
   
   
-  #' scatter plot for sentiment analysis of tweets
+  #' scatter plot for sentiment analysis of texts
   #' 
   output$sentimentScatterPlot <- renderPlot({
     
-    sent_df <- reactive.values$tweets.df
+    sent_df <- reactive.values$comments.df
     
-    #' format tweetcreated to date time format
-    sent_df$tweetcreated <- as.POSIXct(sent_df$tweetcreated, format="%Y-%m-%d %H:%M:%S",tz="UTC")
+    #' format textcreated to date time format
+    sent_df$textcreated <- as.POSIXct(sent_df$textcreated, format="%Y-%m-%d %H:%M:%S",tz="UTC")
     
-    #' evaluate tweets sentiments using glmnet model
+    #' evaluate texts sentiments using glmnet model
     sent_df <- withProgress({
       setProgress(message = "Evaluating comments with nlp model..."
       )
@@ -968,19 +968,19 @@ shinyServer(function(input, output, session) {
   ############################## - Start Taxonomy Matrix Analysis - ############
   
   output$taxonomyMatrix <- DT::renderDataTable({
-    #comments <- reactive.values$tweets.df$tweet
+    #comments <- reactive.values$comments.df$text
     
     #' function from taxonomyMatrix.R
     tax.matrix <- withProgress({
       setProgress(message = "Processing ...")
       
-      non.zero.df <<- getDocTaxLongDF(tax.data.tree, reactive.values$tweets.df)
+      non.zero.df <<- getDocTaxLongDF(tax.data.tree, reactive.values$comments.df)
       
-      updateSelectInput(session, "vertical", label = "Vertical", choices = colnames(non.zero.df), selected = "tweetid")
+      updateSelectInput(session, "vertical", label = "Vertical", choices = colnames(non.zero.df), selected = "textid")
       updateSelectInput(session, "horizontal", label = "Horizontal", choices = colnames(non.zero.df), selected = "LEVEL1")
       
       docTermMatrix <- reshape2::dcast(data = non.zero.df, 
-                                       formula = tweetid ~ LEVEL1, 
+                                       formula = textid ~ LEVEL1, 
                                        value.var = "variable", 
                                        fun.aggregate = getFunction("paste.unique")
       )
@@ -1003,7 +1003,7 @@ shinyServer(function(input, output, session) {
     
     formula.var <- as.formula(paste( paste(factors,collapse = "+"), paste("~",dependent)))
     
-    if("tweetid" %in% c(factors)) {
+    if("textid" %in% c(factors)) {
       docTermMatrix <- reshape2::dcast(data = non.zero.df, 
                                        formula = formula.var, 
                                        value.var = "variable", 
@@ -1012,7 +1012,7 @@ shinyServer(function(input, output, session) {
     }else{
       docTermMatrix <- reshape2::dcast(data = non.zero.df, 
                                        formula = formula.var, 
-                                       value.var = "tweetid", 
+                                       value.var = "textid", 
                                        fun.aggregate = length
       )
     }
@@ -1051,7 +1051,7 @@ shinyServer(function(input, output, session) {
       
       formula.var <- as.formula(paste( paste(factors,collapse = "+"), paste("~",dependent)))
       
-      if("tweetid" %in% c(factors)) {
+      if("textid" %in% c(factors)) {
         docTermMatrix <- reshape2::dcast(data = non.zero.df, 
                                          formula = formula.var, 
                                          value.var = "variable", 
@@ -1060,7 +1060,7 @@ shinyServer(function(input, output, session) {
       }else{
         docTermMatrix <- reshape2::dcast(data = non.zero.df, 
                                          formula = formula.var, 
-                                         value.var = "tweetid", 
+                                         value.var = "textid", 
                                          fun.aggregate = length
         )
       }
@@ -1078,13 +1078,13 @@ shinyServer(function(input, output, session) {
   ############################## - Start Taxonomy Pivot Analysis - ############
   
   output$taxPivot <- pivottabler::renderPivottabler({
-    #comments <- reactive.values$tweets.df$tweet
+    #comments <- reactive.values$comments.df$text
     
     #' function from taxonomyMatrix.R
     tax.matrix <- withProgress({
       setProgress(message = "Processing ...")
       
-      non.zero.df <<- getDocTaxLongDF(tax.data.tree, reactive.values$tweets.df)
+      non.zero.df <<- getDocTaxLongDF(tax.data.tree, reactive.values$comments.df)
       
       updateSelectInput(session, "pivot_rows", label = "Group Rows By",
                         choices = colnames(non.zero.df), selected = "LEVEL2")
@@ -1145,10 +1145,10 @@ shinyServer(function(input, output, session) {
     heatmapList <- withProgress({
       setProgress(message = "Processing ...")
       
-      if(is.null(non.zero.df)) non.zero.df <<- getDocTaxLongDF(tax.data.tree, reactive.values$tweets.df)
+      if(is.null(non.zero.df)) non.zero.df <<- getDocTaxLongDF(tax.data.tree, reactive.values$comments.df)
       
       #' get wide data.frame of taxonomy and document mapping
-      doc.tax.wide.df <- getDocTaxWideDF("LEVEL1",tax.data.tree, reactive.values$tweets.df, non.zero.df)
+      doc.tax.wide.df <- getDocTaxWideDF("LEVEL1",tax.data.tree, reactive.values$comments.df, non.zero.df)
       
       #' get data.frame to plot
       
@@ -1159,12 +1159,12 @@ shinyServer(function(input, output, session) {
       heatmapList <- getHeatmapDF(doc.tax.wide.df, xcol, ycol)
       
       selectLevels <- colnames(non.zero.df)
-      selectLevels <- selectLevels[! selectLevels %in% c("tweet","tweetid","value")]
+      selectLevels <- selectLevels[! selectLevels %in% c("text","textid","value")]
       updateSelectInput(session, "select_level", label = "Select Level",
                         choices = selectLevels, selected = "LEVEL1")
       
       axesLevels <- colnames(doc.tax.wide.df)
-      axesLevels <- axesLevels[!grepl("_FREQ|tweetid\\b",axesLevels, ignore.case = T)]
+      axesLevels <- axesLevels[!grepl("_FREQ|textid\\b",axesLevels, ignore.case = T)]
       updateSelectInput(session, "heatmap_xcol", label = "X Column",
                         choices = axesLevels, selected = xcol)
       updateSelectInput(session, "heatmap_ycol", label = "Y Column",
@@ -1235,7 +1235,7 @@ shinyServer(function(input, output, session) {
       heatmapList <- withProgress({
         setProgress(message = "Processing ...")
         #' get wide data.frame of taxonomy and document mapping
-        doc.tax.wide.df <- getDocTaxWideDF(selectedLevel,tax.data.tree, reactive.values$tweets.df)
+        doc.tax.wide.df <- getDocTaxWideDF(selectedLevel,tax.data.tree, reactive.values$comments.df)
         
         #' get data.frame to plot
         heatmapList <- getHeatmapDF(doc.tax.wide.df, xcol, ycol)
@@ -1399,7 +1399,7 @@ shinyServer(function(input, output, session) {
     #         mutate(Action = paste('<a class="go-map" href="" data-lat="', Latitude, '" data-long="', Longitude, '" data-zip="', AccountID, '"><i class="fa fa-crosshairs"></i></a>', sep=""))
     #       action <- DT::dataTableAjax(session, df)
     
-    df <- reactive.values$tweets.df
+    df <- reactive.values$comments.df
     
     DT::datatable(df)
     
@@ -1489,7 +1489,7 @@ shinyServer(function(input, output, session) {
   
   output$personsValueBox <- renderValueBox({
     
-    text <- reactive.values$tweets.df$tweet %>%
+    text <- reactive.values$comments.df$text %>%
       paste(collapse = " ")
     
     people <- places <- orgs <- NULL
@@ -1570,7 +1570,7 @@ shinyServer(function(input, output, session) {
   #' observeEvent(input$learnTopics,{
   #'   
   #'   #' get current text vector
-  #'   text <- reactive.values$tweets.df$tweet
+  #'   text <- reactive.values$comments.df$text
   #'   
   #'   #
   #'   # Launch doFork in the asyncProcssor.R
@@ -1592,7 +1592,7 @@ shinyServer(function(input, output, session) {
   #'       
   #'       # Do something expensive
   #'       #
-  #'       corpus <- paste(reactive.values$tweets.df$tweet, collapse = " ")
+  #'       corpus <- paste(reactive.values$comments.df$text, collapse = " ")
   #'       topicsandviz <- getTopicsWordsAndViz(corpus)
   #'       
   #'       # Return something
@@ -1642,26 +1642,64 @@ shinyServer(function(input, output, session) {
   #'   
   #' })
   
+  
+  #' ################################################################################################
+  #' Context Explorer
+  #'
+  observeEvent(input$explore_context_button, {
+    
+    print(input$explore_context_button)
+    
+    withProgress(message="Exploring context", {
+      
+      # Create corpus
+      corp <- quanteda::corpus(reactive.values$comments.df, text_field = "text")
+      # remove html tags if any
+      corp <- gsub("</?[^>]+>", "", corp)
+      
+      # tokenise text
+      toks <- quanteda::tokens(corp, remove_punct = TRUE, remove_symbols = TRUE, remove_number = TRUE, remove_url = TRUE) %>%
+        quanteda::tokens_remove(pattern = stopwords("en")) %>% 
+        quanteda::tokens_select(min_nchar = 2)
+      
+      context_df <- kwic(toks, pattern = phrase(paste0(input$phrase_to_explore,'*')))
+      context_df <- as.data.frame(context_df)
+      context_df <- context_df %>% dplyr::select(pre, keyword, post)
+      
+      context_output <- DT::renderDataTable(context_df)
+      
+    })
+    
+  })
+  
+  
+  #' ################################################################################################
+  #' Topic modelling
+  #' 
   observeEvent(input$learnTopics,{
     
     result <- withProgress(message = "Modelling topics this can take a while", {
       
        if(input$supervisedLDA){
-         get_topic_model_output(comments_df = reactive.values$tweets.df,
-                                comments_col = 'tweet', 
+         get_topic_model_output(comments_df = reactive.values$comments.df,
+                                comments_col = 'text', 
                                 number_of_words_per_topic = input$number_of_words_per_topic,
+                                n_grams = input$ngrams_for_topic,
+                                words_to_exclude = input$words_to_exclude,
                                 taxonomy=tax.data.tree)
        }else{
-         get_topic_model_output(comments_df = reactive.values$tweets.df,
-                                comments_col = 'tweet', 
+         get_topic_model_output(comments_df = reactive.values$comments.df,
+                                comments_col = 'text', 
                                 number_of_words_per_topic = input$number_of_words_per_topic,
+                                n_grams = input$ngrams_for_topic,
+                                words_to_exclude = input$words_to_exclude,
                                 taxonomy=NULL)
        }
       
     })
     
     #' get suggestion from model
-    suggestions <- result$terms
+    suggestions <- stringi::stri_replace_all(result$terms, replacement = ' ', fixed = '_')
     suggestion.list <- getQuantedaSuggestionUIComponents(suggestions)
     #' display suggestion 
     output$suggestedTopics <- shiny::renderUI({suggestion.list})
@@ -1684,7 +1722,7 @@ shinyServer(function(input, output, session) {
   #' observeEvent(input$learnTopics,{
   #'   
   #'   #' get current text vector
-  #'   text <- reactive.values$tweets.df$tweet
+  #'   text <- reactive.values$comments.df$text
   #'   
   #'   #
   #'   # Launch doFork in the asyncProcssor.R
@@ -1707,8 +1745,8 @@ shinyServer(function(input, output, session) {
   #'       # Do something expensive
   #'       #
   #'       
-  #'       lda_model_params <- get_topic_model_output(comments_df = reactive.values$tweets.df,
-  #'                                              comments_col = 'tweet', 
+  #'       lda_model_params <- get_topic_model_output(comments_df = reactive.values$comments.df,
+  #'                                              comments_col = 'text', 
   #'                                              taxonomy=tax.data.tree)
   #'       
   #'       # Return something
@@ -1867,7 +1905,7 @@ shinyServer(function(input, output, session) {
   
   output$userDonut <- plotly::renderPlotly({
     
-    userdf <- reactive.values$tweets.df$user %>%
+    userdf <- reactive.values$comments.df$user %>%
       table() %>%
       as.data.frame()
     
@@ -1901,14 +1939,14 @@ shinyServer(function(input, output, session) {
     
     withProgress(message="Creating Heatmap...", {
       
-      tweets.df <- reactive.values$tweets.df
+      comments.df <- reactive.values$comments.df
       
       if(input$compareDocsBy == "User") {
         
-        tweets.df <- tweets.df %>%
-          select(user, tweet) %>%
+        comments.df <- comments.df %>%
+          select(user, text) %>%
           group_by(user) %>%
-          summarise(doc = paste(tweet,collapse=" "))
+          summarise(doc = paste(text,collapse=" "))
         
       }else{
         
@@ -1916,7 +1954,7 @@ shinyServer(function(input, output, session) {
       
       
       #' function from LatentSematicAnalysis.R lib file
-      dtm <- getDocumentTermMatrix(tweets.df, "doc", "user")
+      dtm <- getDocumentTermMatrix(comments.df, "doc", "user")
       
       doc_similarity <- cosineSimilatiry(dtm, dtm)
       
@@ -1950,40 +1988,40 @@ shinyServer(function(input, output, session) {
     
     withProgress(message="Generating Document Gist...", {
       
-      tweets.df <- reactive.values$tweets.df
+      comments.df <- reactive.values$comments.df
       
       doc_gist <- NULL
       
       if(input$getDocGistBy == "Overall") {
         
-        tweets.df <- tweets.df %>%
-        summarise(text = paste(tweet,collapse=" <br> "))
+        comments.df <- comments.df %>%
+        summarise(text = paste(text,collapse=" <br> "))
         
-        tidy_comments <- tweets.df %>%
+        tidy_comments <- comments.df %>%
                          tidytext::unnest_tokens(word, text)
         
         
       }else if(input$getDocGistBy == "User") {
-        tweets.df <- tweets.df %>%
-        select(user, tweet) %>%
+        comments.df <- comments.df %>%
+        select(user, text) %>%
         group_by(user) %>%
-        summarise(text = paste(tweet,collapse=" ")) 
+        summarise(text = paste(text,collapse=" ")) 
         
-        tidy_comments <- tweets.df[1,] %>%
+        tidy_comments <- comments.df[1,] %>%
           tidytext::unnest_tokens(word, text)
       }
       
       #' comments table
       #' trim the display text to 300 chars
-      if(!is.null(tweets.df)) tweets.df$text <- paste(strtrim(tweets.df$text, 1000),"...")
+      if(!is.null(comments.df)) comments.df$text <- paste(strtrim(comments.df$text, 1000),"...")
       
       output$pageFilter <- renderUI({
         val <- input$table_state$start / input$table_state$length + 1
-        numericInput("page", "Page", val, min = 1, max = nrow(tweets.df))
+        numericInput("page", "Page", val, min = 1, max = nrow(comments.df))
       })
       
       output$table <- DT::renderDataTable({
-        tweets.df
+        comments.df
       }, filter = 'top', options = list(pageLength = 1, dom = 't', stateSave = TRUE))
       
       
@@ -1997,7 +2035,7 @@ shinyServer(function(input, output, session) {
       #     )
       #   })
       
-      reactive.values$gistdf <- tweets.df
+      reactive.values$gistdf <- comments.df
       
     })
     

@@ -9,7 +9,7 @@ library(V8)
 
 dashboardPage(title = "Orox.ai", skin = "black", 
   dashboardHeader(
-    title = span(tagList(icon("barcode"), "docsetta")), 
+    title = span(tagList(icon("barcode"), HTML("Dirk"))), 
     dropdownMenuOutput("notificationMenu")
   ),
   
@@ -40,10 +40,9 @@ dashboardPage(title = "Orox.ai", skin = "black",
                          
                 ),
                 menuItem("Computational Linguistics", icon = icon("android"),
-                         menuSubItem("Sentiment Analysis", icon = icon("smile-o"), tabName = "sentimentAnalysis"),
+                         menuSubItem("Explore Context", icon = icon("search"), tabName= "explore_context"),
                          menuSubItem("Learn Topics", icon = icon("book"), tabName = "lda"),
-                         #                        menuItem("Word Suggestions",
-                         #                                      shiny::shinyUI("wordSuggestions")),
+                         menuSubItem("Sentiment Analysis", icon = icon("smile-o"), tabName = "sentimentAnalysis"),
                          menuItem("Extract Entities", icon = icon("user-circle"), tabName = "extractedEntities"),
                          menuItem("Doc Comparison", icon=icon("cubes"), tabName="documentSimilarity"),
                          menuItem("Doc Gist", icon=icon("compress"), tabName="documentGist")
@@ -366,6 +365,17 @@ dashboardPage(title = "Orox.ai", skin = "black",
               
       ),
       
+      tabItem("explore_context",
+              fluidRow(
+                textInput("phrase_to_explore", label = "", placeholder = "Enter word or phrase to explore"),
+                actionButton("explore_context_button", "Explore")
+              )
+              ,fluidRow(
+                DT::dataTableOutput('context_output')
+              )
+              
+      ),
+      
       #' topic modelling using LDA
       tabItem("lda",
               
@@ -378,10 +388,13 @@ dashboardPage(title = "Orox.ai", skin = "black",
                             checkboxInput("supervisedLDA", "Use my taxonomy as seed for topic modelling", TRUE)
                          )
                          ,column(width=2,
-                            numericInput("number_of_words_per_topic", "Words per topic", value = 10)
+                            numericInput("number_of_words_per_topic", "Words per topic", value = 10, min = 1, max = 30)
                          )
-                         ,column(width=6,
-                                 HTML("<p></p>")
+                         ,column(width=2,
+                                 numericInput("ngrams_for_topic", "NGrams", value = 1, min = 1, max = 4)
+                         )
+                         ,column(width=4,
+                                 textAreaInput("words_to_exclude", "Words to exclude")
                          )
                        )
                        ,fluidRow(
