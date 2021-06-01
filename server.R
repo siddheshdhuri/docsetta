@@ -1701,7 +1701,7 @@ shinyServer(function(input, output, session) {
     output$suggestedTopics <- shiny::renderUI({suggestion.list})
     
     #' display the LDA visualuzation graph
-    output$ldaviz <- renderVis({
+    output$ldaviz <- LDAvis::renderVis({
       createJSON(phi = result$phi, 
                  theta = result$theta, 
                  doc.length = result$doc.length, 
