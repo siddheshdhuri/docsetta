@@ -279,13 +279,13 @@ dashboardPage(title = "Orox.ai", skin = "black",
       tabItem("heatmapAnalysis",
               fluidRow(
                 column(width = 3,
-                       selectInput("heatmap_ycol",label = "Y Column", choices = "")
+                       selectInput("heatmap_ycol",label = "Topic on Y Axis", choices = "")
                 ),
                 column(width = 3,
-                       selectInput("heatmap_xcol",label = "X Column", choices = "")
+                       selectInput("heatmap_xcol",label = "Topic on X axis", choices = "")
                 ),
                 column(width = 3,
-                       selectInput("select_level",label = "Select Level", choices = "")
+                       selectInput("select_level",label = "Select terms at level", choices = "")
                 ),
                 column(width = 3,
                        actionButton("drawHeatmap", "Draw Heatmap")

@@ -1648,8 +1648,6 @@ shinyServer(function(input, output, session) {
   #'
   observeEvent(input$explore_context_button, {
     
-    print(input$explore_context_button)
-    
     withProgress(message="Exploring context", {
       
       # Create corpus
@@ -1658,15 +1656,13 @@ shinyServer(function(input, output, session) {
       corp <- gsub("</?[^>]+>", "", corp)
       
       # tokenise text
-      toks <- quanteda::tokens(corp, remove_punct = TRUE, remove_symbols = TRUE, remove_number = TRUE, remove_url = TRUE) %>%
-        quanteda::tokens_remove(pattern = stopwords("en")) %>% 
-        quanteda::tokens_select(min_nchar = 2)
+      toks <- quanteda::tokens(corp, remove_punct = TRUE, remove_symbols = TRUE, remove_number = TRUE, remove_url = TRUE) 
       
       context_df <- kwic(toks, pattern = phrase(paste0(input$phrase_to_explore,'*')))
       context_df <- as.data.frame(context_df)
       context_df <- context_df %>% dplyr::select(pre, keyword, post)
       
-      context_output <- DT::renderDataTable(context_df)
+      output$context_output <- DT::renderDataTable(context_df)
       
     })
     
