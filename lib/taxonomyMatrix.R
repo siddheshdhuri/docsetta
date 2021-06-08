@@ -136,6 +136,7 @@ getTransposeData <- function(xaxis,yaxis,valuevar,data) {
 #' @return docTermDF document Term Data Frame.
 getDocTermDF <- function(textdf, dict, id_col, text_col){
   
+  
   comments <- textdf[[text_col]]
   
   #' replace newline character from the posts

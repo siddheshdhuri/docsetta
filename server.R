@@ -195,6 +195,9 @@ shinyServer(function(input, output, session) {
     
     output$contents <- DT::renderDataTable(csvdata[1:10,selected_columns])
     
+    #' Keep only comments where id_col is not NA
+    comments.df <- comments.df %>% filter(!is.na(textid))
+    
     reactive.values$comments.df <- comments.df
     
     #'set global comments df
@@ -970,6 +973,17 @@ shinyServer(function(input, output, session) {
   output$taxonomyMatrix <- DT::renderDataTable({
     #comments <- reactive.values$comments.df$text
     
+    non.zero.df <<- getDocTaxLongDF(tax.data.tree, reactive.values$comments.df)
+    
+    updateSelectInput(session, "vertical", label = "Vertical", choices = colnames(non.zero.df), selected = "textid")
+    updateSelectInput(session, "horizontal", label = "Horizontal", choices = colnames(non.zero.df), selected = "LEVEL1")
+    
+    docTermMatrix <- reshape2::dcast(data = non.zero.df, 
+                                     formula = textid ~ LEVEL1, 
+                                     value.var = "variable", 
+                                     fun.aggregate = getFunction("paste.unique")
+    )
+    
     #' function from taxonomyMatrix.R
     tax.matrix <- withProgress({
       setProgress(message = "Processing ...")
@@ -1017,7 +1031,7 @@ shinyServer(function(input, output, session) {
       )
     }
     
-    docTermMatrix <- DT::datatable(docTermMatrix, options = list(lengthMenu = c(5,10), scrollX = TRUE,
+    docTermMatrix <- DT::datatable(docTermMatrix, options = list(scrollX = TRUE,
                                                            columnDefs = list(list(
                                                              targets = "_all",
                                                              render = JS(
@@ -1040,7 +1054,7 @@ shinyServer(function(input, output, session) {
   
   output$downloadCrossTab <- downloadHandler(
     filename = function() {
-      paste("data-", Sys.Date(), ".csv", sep="")
+      paste("Crosstab-", Sys.Date(), ".csv", sep="")
     },
     content = function(file) {
       
@@ -1079,58 +1093,87 @@ shinyServer(function(input, output, session) {
   
   output$taxPivot <- pivottabler::renderPivottabler({
     #comments <- reactive.values$comments.df$text
-    
+
     #' function from taxonomyMatrix.R
     tax.matrix <- withProgress({
-      setProgress(message = "Processing ...")
+      setProgress(message = "Updating dropdown options...")
+
       
-      non.zero.df <<- getDocTaxLongDF(tax.data.tree, reactive.values$comments.df)
-      
+      if(is.null(non.zero.df)){
+        non.zero.df <<- getDocTaxLongDF(tax.data.tree, reactive.values$comments.df)
+      }
+  
+      option <- colnames(non.zero.df)
       updateSelectInput(session, "pivot_rows", label = "Group Rows By",
-                        choices = colnames(non.zero.df), selected = "LEVEL2")
-      updateSelectInput(session, "pivot_columns", label = "Group Columns By", 
                         choices = colnames(non.zero.df), selected = "LEVEL1")
-      
-      pt$addData(non.zero.df)
-      #pt$addColumnDataGroups(input$pivot_columns)
-      #pt$addRowDataGroups(input$pivot_rows)
-      pt$defineCalculation(calculationName="NumComments", summariseExpression="n()")
-      pt$evaluatePivot()
-      pivottabler(pt)
-      
-      
+      updateSelectInput(session, "pivot_columns", label = "Group Columns By",
+                        choices = colnames(non.zero.df), selected = "LEVEL2")
+
+      # pt$addData(non.zero.df)
+      # #pt$addColumnDataGroups(input$pivot_columns)
+      # #pt$addRowDataGroups(input$pivot_rows)
+      # pt$defineCalculation(calculationName="NumComments", summariseExpression="n()")
+      # pt$evaluatePivot()
+      # pivottabler(pt)
+      NULL
+
     })
-    
+
     return(tax.matrix)
-    
+
   })
+  
+  
   
   observeEvent(input$drawPivot,{
     
     pivot.cols <- input$pivot_columns
     pivot.rows <- input$pivot_rows
     
-    pt <- PivotTable$new()
-    pt$addData(non.zero.df)
+    withProgress({
+      setProgress(message = "Processing pivot table...")
     
-    for(pivot.row in pivot.rows){
-      pt$addRowDataGroups(pivot.row)
-    }
-    
-    for(pivot.col in pivot.cols){
-      pt$addColumnDataGroups(pivot.col)
-    }
-    
-    pt$defineCalculation(calculationName="NumComments", summariseExpression="n()")
-    
-    pt$evaluatePivot()
-    
-    output$taxPivot <- pivottabler::renderPivottabler({
-      pivottabler(pt)
+      pt <- PivotTable$new()
+      pt$addData(non.zero.df)
+      
+      for(pivot.row in pivot.rows){
+        pt$addRowDataGroups(pivot.row)
+      }
+      
+      for(pivot.col in pivot.cols){
+        pt$addColumnDataGroups(pivot.col)
+      }
+      
+      pt$defineCalculation(calculationName="NumComments", summariseExpression="n()")
+      
+      pt$evaluatePivot()
+      
+      output$taxPivot <- pivottabler::renderPivottabler({
+        pivottabler(pt)
+      })
+      
+      #' wite to temp
+      wb <- openxlsx::createWorkbook(creator = "Dirk at Orox.ai")
+      openxlsx::addWorksheet(wb, "Pivot")
+      pt$writeToExcelWorksheet(wb=wb, wsName="Pivot", 
+                               topRowNumber=1, leftMostColumnNumber=1, applyStyles=TRUE)
+      openxlsx::saveWorkbook(wb, file="data/temp.xlsx", overwrite = TRUE)
+      
     })
     
-    
   })
+  
+  output$download_taxonomy_pivot <- downloadHandler(
+    
+    filename = function() {
+      paste0("Pivot-", Sys.Date(), ".xlsx")
+    },
+    
+    content = function(file) {
+      openxlsx::saveWorkbook(openxlsx::loadWorkbook('data/temp.xlsx'), file = file, overwrite = TRUE)
+    }
+    
+  )
   
   
   ############################# - End Taxonomy Pivot Analysis - ################

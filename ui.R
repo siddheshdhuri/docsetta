@@ -260,18 +260,25 @@ dashboardPage(title = "Orox.ai", skin = "black",
       
       tabItem("pivotAnalysis",
               fluidRow(
-                column(width = 4,
+                column(width = 3,
                        selectInput("pivot_rows",label = "Group Rows By", choices = "", multiple = TRUE)
                 ),
-                column(width = 4,
+                column(width = 3,
                        selectInput("pivot_columns",label = "Group Columns By", choices = "", multiple = TRUE)
                 ),
-                column(width = 4,
+                column(width = 3,
                        actionButton("drawPivot", "Pivot")
+                ),
+                column(width = 3,
+                       downloadButton("download_taxonomy_pivot", label = "Download")
                 )
               ),
               fluidRow(
-                shinycssloaders::withSpinner(pivottabler::pivottablerOutput("taxPivot"))
+                
+                div(style = 'overflow-x: scroll', 
+                    shinycssloaders::withSpinner(pivottabler::pivottablerOutput("taxPivot"))
+                    )
+                
               )
       ),
       
