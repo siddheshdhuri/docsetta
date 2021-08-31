@@ -565,3 +565,58 @@ getQuantedaSuggestionUIComponents <- function(suggestions) {
   return(suggestions.list)
 } 
 
+
+
+
+get_top_n_words_by_group <- function(df, groupvar, n=10, n_grams=1, comments_col='text', words_to_exclude = NULL) {
+  
+  df <- df %>% group_by(across(all_of(groupvar))) %>% summarise(text = paste(text, collapse=' '))
+  
+  this_list <- list()
+  
+  for(i in 1:nrow(df)){
+    
+    this_df <- df[i,]
+    
+    top_features <- get_top_n_words(this_df, n=n, n_grams = n_grams)
+    
+    top_features <- data.frame(lapply(top_features, type.convert), stringsAsFactors=FALSE)
+    
+    top_features <- cbind(this_df[groupvar], top_features)
+    
+    this_list[[i]] <- top_features
+  }
+  
+  df <- plyr::rbind.fill(this_list)
+  
+  return(df)
+}
+
+
+
+get_top_n_words <- function(comments_df, n=10, n_grams=1, comments_col = 'text', words_to_exclude = NULL) {
+  
+  # Create corpus
+  corp <- quanteda::corpus(comments_df, text_field = comments_col)
+  # remove html tags if any
+  corp <- gsub("</?[^>]+>", "", corp)
+  corp <- gsub("\n", "", corp)
+  
+  
+  # tokenise text
+  toks <- quanteda::tokens(corp, remove_punct = TRUE, remove_symbols = TRUE, remove_number = TRUE, remove_url = TRUE) %>%
+    quanteda::tokens_remove(pattern = stopwords("en")) %>% 
+    quanteda::tokens_select(min_nchar = 2) %>%
+    quanteda::tokens_remove(words_to_exclude)
+  
+  if(n_grams > 1){
+    toks <- quanteda::tokens_ngrams(toks, n = n_grams)
+  }
+  
+  dfmt <- quanteda::dfm(toks) %>%
+    quanteda::dfm_remove(stopwords('en'), min_nchar = 2)
+  
+  
+  return(topfeatures(dfmt, n=n))
+  
+}

@@ -65,9 +65,12 @@ shinyServer(function(input, output, session) {
       #' get csv file column names to be mapped with framework template
       filecols <- colnames(filedata)
       #' set the csv column names in all the select inputs to map with framework template
-      for(i in 1:length(columnnames)){
-        updateSelectInput(session, columnnames[i], choices = c("None",filecols))
+      for(i in 1:length(COLUMNNAMES)){
+        updateSelectInput(session, COLUMNNAMES[i], choices = c("None",filecols))
       }
+      
+      updateSelectInput(session, "columns_to_keep", choices = c("None",filecols))
+      
       #' set csv global variable (this code needs to be redone)
       csvdata <<- filedata
       
@@ -182,18 +185,15 @@ shinyServer(function(input, output, session) {
       selected_columns <- c(selected_columns, input$user)
     }
     
-    favCount <- 0
-    retextCount <- 0
-    # assigning higher weight to retext as it will proliferate trend
-    reach <- 0
-    
     
     comments.df = data.frame(cbind(textid= textid, text=text,textcreated=textcreated,
-                                 lat=textlat,lon=textlon, user=textuser,
-                                 favCount = favCount, retextCount = retextCount, reach = reach),
+                                 lat=textlat,lon=textlon, user=textuser
+                                 ),
                            stringsAsFactors = FALSE)
     
-    output$contents <- DT::renderDataTable(csvdata[1:10,selected_columns])
+    comments.df <- cbind(comments.df, csvdata[input$columns_to_keep])
+    
+    output$contents <- DT::renderDataTable(csvdata[1:10,c(selected_columns, input$columns_to_keep) ])
     
     #' Keep only comments where id_col is not NA
     comments.df <- comments.df %>% filter(!is.na(textid))
@@ -752,6 +752,7 @@ shinyServer(function(input, output, session) {
     
     comments.df <- reactive.values$comments.df
     time.break <- input$chrono
+    # @TODO this function is from file sentimentanalysis.R move to the package.
     sentimentplot.data <- getSentimentAnalysis(comments.df, time.break = time.break)
     
     dygraph(sentimentplot.data, main = "Sentiment Analysis") %>%
@@ -906,7 +907,7 @@ shinyServer(function(input, output, session) {
     #' prepare text by remove special charaters, punctuation, etc..
     textsvector <- prepareTextForAnalysis(textsvector)
     #' perform sentiment analysis and get data.frame
-    sent_df <- getSentimentAnalysisDF(textsvector)
+    sent_df <- getEmotionAnalysisDF(textsvector)
 
     output$sent_df <- renderTable(sent_df)
     #' 
@@ -927,6 +928,52 @@ shinyServer(function(input, output, session) {
   })
   
   
+  #' getSentimentAnalysisDF <- function(df_texts, glmnet_classifier=NULL) {
+  #'   
+  #'   # function for converting some symbols
+  #'   conv_fun <- function(x) iconv(x, "latin1", "ASCII", "")
+  #'   
+  #'   df_texts %>%
+  #'     # converting some symbols
+  #'     purrrlyr::dmap_at('text', conv_fun)
+  #'   
+  #'   ##### doc2vec #####
+  #'   # define preprocessing function and tokenization function
+  #'   prep_fun <- tolower
+  #'   tok_fun <- text2vec::word_tokenizer
+  #'   
+  #'   # preprocessing and tokenization
+  #'   it_texts <- text2vec::itoken(df_texts$text,
+  #'                      preprocessor = prep_fun,
+  #'                      tokenizer = tok_fun,
+  #'                      ids = df_texts$id,
+  #'                      progressbar = TRUE)
+  #'   
+  #'   # get vectorizer that was used for developing model
+  #'   vectorizer <- readRDS('model/vectorizer.RDS')
+  #'   
+  #'   # creating vocabulary and document-term matrix
+  #'   dtm_texts <- text2vec::create_dtm(it_texts, vectorizer)
+  #'   
+  #'   # define tf-idf model
+  #'   tfidf <- text2vec::TfIdf$new()
+  #'   # transforming data with tf-idf
+  #'   dtm_texts_tfidf <- text2vec::fit_transform(dtm_texts, tfidf)
+  #'   
+  #'   # loading classification model
+  #'   glmnet_classifier <- readRDS('model/glmnet_classifier.RDS')
+  #'   
+  #'   # predict probabilities of positiveness
+  #'   #'@TODO update glmnet model
+  #'   preds_texts <- glmnet:::predict.cv.glmnet(glmnet_classifier, dtm_texts_tfidf, type = 'response')[ ,1]
+  #'   
+  #'   # adding rates to initial dataset
+  #'   df_texts$sentiment <- preds_texts
+  #'   
+  #'   return(df_texts)
+  #'   
+  #' }
+  
   #' scatter plot for sentiment analysis of texts
   #' 
   output$sentimentScatterPlot <- renderPlot({
@@ -940,7 +987,8 @@ shinyServer(function(input, output, session) {
     sent_df <- withProgress({
       setProgress(message = "Evaluating comments with nlp model..."
       )
-      sentimentAnalysis::getSentimentAnalysisDF(df_tweets = sent_df)
+      
+      sentimentAnalysis::getSentimentAnalysisDF(df_texts = sent_df)
     })
     
     sent_df_global <<- sent_df
@@ -975,8 +1023,10 @@ shinyServer(function(input, output, session) {
     
     non.zero.df <<- getDocTaxLongDF(tax.data.tree, reactive.values$comments.df)
     
-    updateSelectInput(session, "vertical", label = "Vertical", choices = colnames(non.zero.df), selected = "textid")
-    updateSelectInput(session, "horizontal", label = "Horizontal", choices = colnames(non.zero.df), selected = "LEVEL1")
+    choice_options <- setdiff(colnames(non.zero.df), c('variable','value'))
+    
+    updateSelectInput(session, "vertical", label = "Vertical", choices = choice_options, selected = "textid")
+    updateSelectInput(session, "horizontal", label = "Horizontal", choices = choice_options, selected = "LEVEL1")
     
     docTermMatrix <- reshape2::dcast(data = non.zero.df, 
                                      formula = textid ~ LEVEL1, 
@@ -1050,6 +1100,11 @@ shinyServer(function(input, output, session) {
     
   }
   )
+  
+  
+  observe({
+    print(input$vertical)
+  })
   
   
   output$downloadCrossTab <- downloadHandler(
@@ -1686,6 +1741,54 @@ shinyServer(function(input, output, session) {
   #' })
   
   
+  
+  observe({
+    
+    #cols <- setdiff(colnames(reactive.values$comments.df), COLUMNNAMES)
+    cols <- c("textid", input$columns_to_keep)
+    updateSelectizeInput(session, "group_by_column", choices=cols)
+    
+  })
+  
+  
+  observeEvent(input$get_term_freq_by_group, {
+    
+    #withProgress(message="Computing term frequencies", {
+      
+      df <- get_top_n_words_by_group(df=reactive.values$comments.df, 
+                                     groupvar=input$group_by_column, 
+                                     n=input$number_of_words_for_term_freq_per_category,
+                                     n_grams=input$ngrams_for_term_freq_per_category)
+
+      
+      # create a new column `group` with the three columns collapsed together
+      df$group <- apply( df[input$group_by_column] , 1 , paste , collapse = "|" )
+      
+      # remove the unnecessary columns
+      df <- df[ , !( names( df ) %in% input$group_by_column ) ]
+      
+      rownames(df) <- df$group
+      df$group <- NULL
+      
+      brks <- quantile(df, probs = seq(.05, .95, .05), na.rm = TRUE)
+      clrs <- round(seq(255, 40, length.out = length(brks) + 1), 0) %>%
+        {paste0("rgb(255,", ., ",", ., ")")}
+      
+      output$term_freq_table <- DT::renderDataTable({ 
+        dat <- datatable(df, options = list(paging=FALSE, dom='tpB', buttons=c('copy', 'excel', 'colvis'), pageLength=1000), extensions = 'Buttons') %>%
+          formatStyle(names(df), backgroundColor = styleInterval(brks, clrs))
+        
+        return(dat)
+      })
+      
+    #})
+    
+  })
+  
+  
+  
+  
+  
   #' ################################################################################################
   #' Context Explorer
   #'
@@ -1745,7 +1848,7 @@ shinyServer(function(input, output, session) {
     
     #' display the LDA visualuzation graph
     output$ldaviz <- LDAvis::renderVis({
-      createJSON(phi = result$phi, 
+      LDAvis::createJSON(phi = result$phi, 
                  theta = result$theta, 
                  doc.length = result$doc.length, 
                  vocab = result$vocab, 

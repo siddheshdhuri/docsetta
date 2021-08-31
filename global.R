@@ -119,7 +119,7 @@ word_ann <- Maxent_Word_Token_Annotator()
 sent_ann <- Maxent_Sent_Token_Annotator()
 
 ############# - load file selector input names -##############################################
-columnnames <- c("ID", "comment", "datecreated", "longitude", "latitude", "user")
+COLUMNNAMES <- c("ID", "comment", "datecreated", "longitude", "latitude", "user")
 
 ############# - NA Patters to ignore while reding text file - ################################
 na.patterns <- "#REF!|#N/A|\\(blank\\)"

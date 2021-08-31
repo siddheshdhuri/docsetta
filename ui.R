@@ -40,6 +40,7 @@ dashboardPage(title = "Orox.ai", skin = "black",
                          
                 ),
                 menuItem("Computational Linguistics", icon = icon("android"),
+                         menuItem("Term Frequency", tabName = "term_freqs"),
                          menuSubItem("Explore Context", icon = icon("search"), tabName= "explore_context"),
                          menuSubItem("Learn Topics", icon = icon("book"), tabName = "lda"),
                          menuSubItem("Sentiment Analysis", icon = icon("smile-o"), tabName = "sentimentAnalysis"),
@@ -132,17 +133,20 @@ dashboardPage(title = "Orox.ai", skin = "black",
                                 column(2,
                                        selectInput("comment", label = HTML("Comment<sup>*Required</sup>"), choices = c("None"))
                                 ),
-                                column(2,
+                                column(1,
                                        selectInput("datecreated", label = "Date Created", choices = c("None"))
                                 ),
-                                column(2,
+                                column(1,
                                        selectInput("longitude", label = "Longitude", choices = c("None")) 
                                 ),
-                                column(2,
+                                column(1,
                                        selectInput("latitude", label = "Latitude", choices = c("None"))
                                 ),
                                 column(2,
                                        selectInput("user", label = "User", choices = c("None"))
+                                ),
+                                column(2,
+                                       selectInput("columns_to_keep", label = "Keep columns", choices = c("None") , multiple=TRUE)
                                 )
                                 
                               )
@@ -221,11 +225,11 @@ dashboardPage(title = "Orox.ai", skin = "black",
                                 dygraphOutput("sentimentplot")
                               )
                      ),
-                     tabPanel("Sentiment Cloud", 
+                     tabPanel("Sentiment Cloud",
                               shinycssloaders::withSpinner(plotOutput("sentiment_cloud"))
                      ),
-                     tabPanel("Emotion Analysis", 
-                              tableOutput("sent_df")      
+                     tabPanel("Emotion Analysis",
+                              tableOutput("sent_df")
                      ),
                      tabPanel("Sentiment Analysis", 
                               plotOutput("sentimentScatterPlot", height = 500,
@@ -371,6 +375,34 @@ dashboardPage(title = "Orox.ai", skin = "black",
               )
               
       ),
+      
+      tabItem("term_freqs",
+              fluidRow(
+                column(width=2,
+                       selectizeInput("group_by_column", "Group by", choices = c("None"), multiple=TRUE)
+                ),
+                column(width=2,
+                        numericInput("number_of_words_for_term_freq_per_category", "Words per category", value = 10, min = 10, max = 100)
+                )
+                ,column(width=2,
+                        numericInput("ngrams_for_term_freq_per_category", "NGrams", value = 1, min = 1, max = 4)
+                )
+                ,column(width=2,
+                        textAreaInput("words_to_exclude_in_term_freq", "Words to exclude")
+                ),
+                column(width=2,
+                       actionButton("get_term_freq_by_group", "Get Term Freq")   
+                )
+                
+              )
+              ,fluidRow(
+                div(style = 'overflow-x: scroll', 
+                    DT::dataTableOutput('term_freq_table')
+                )
+              )
+              
+      ),
+      
       
       tabItem("explore_context",
               fluidRow(
